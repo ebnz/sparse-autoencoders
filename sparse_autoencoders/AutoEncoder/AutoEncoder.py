@@ -1,7 +1,7 @@
 import torch
 import os
-from utils import AutoEncoderUtils
-from utils.AutoEncoderUtils import save_plotly_graph, generate_loss_curve
+from sparse_autoencoders.AutoEncoder import AutoEncoderUtils
+from sparse_autoencoders.AutoEncoder.AutoEncoderUtils import save_plotly_graph, generate_loss_curve
 
 
 class AutoEncoderBase(torch.nn.Module):
@@ -179,7 +179,7 @@ class AutoEncoderBase(torch.nn.Module):
             fig = AutoEncoderUtils.generate_histogram(activation_counts_log10, no_dead_neurons)
             AutoEncoderUtils.save_plotly_graph(fig, os.path.join(self.IMAGE_PATH, f"{self.training_runs}.html"))
             model_conf = AutoEncoderUtils.generate_model_conf(self, self.n, self.m, self.LEARNING_RATE, self.L1_COEFFICIENT,
-                                             self.BATCH_SIZE, self.LAYER_TYPE, self.LAYER_INDEX)
+                                                              self.BATCH_SIZE, self.LAYER_TYPE, self.LAYER_INDEX)
             AutoEncoderUtils.save_autoencoder_checkpoint(
                 model_conf,
                 os.path.join(self.SAVE_PATH, f"{self.training_runs}.pt")

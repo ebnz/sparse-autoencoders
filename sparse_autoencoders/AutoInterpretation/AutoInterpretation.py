@@ -10,8 +10,7 @@ from utils.TokenizedDataset import TokenizedDatasetPreload
 from utils.AutoInterpretationUtils import ModelNeededDecorators
 from utils.Dataclasses import InterpretationConfig
 import re
-import deepspeed
-from deepspeed import comm
+
 
 class AutoInterpreter(ModelNeededDecorators):
     def __init__(self, interpretation_config: InterpretationConfig):
