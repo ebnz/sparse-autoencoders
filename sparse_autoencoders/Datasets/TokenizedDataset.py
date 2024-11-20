@@ -32,7 +32,6 @@ class TokenizedDataset(Dataset):
 
         if new_file_id != self.current_file_id:
             self.file = torch.load(os.path.join(self.path, self.files[new_file_id]))
-            #self.file = torch.load(os.path.join(self.path, f"fragment_{new_file_id}.pt"))
             self.current_file_id = new_file_id
 
         return self.file[sub_index].to(self.dtype)

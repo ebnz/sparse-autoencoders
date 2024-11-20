@@ -1,19 +1,16 @@
-import pickle
-from itertools import product
-
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils.AutoEncoder import *
-from utils.TransformerModels import CodeLlamaModel, CodeLlamaModelDeepspeed
-from utils.TokenizedDataset import TokenizedDatasetPreload
-from utils.AutoInterpretationUtils import ModelNeededDecorators
-from utils.Dataclasses import InterpretationConfig
+
+from sparse_autoencoders import AutoEncoder, TransformerModels, Datasets, utils
+
+import pickle
+from itertools import product
 import re
 
 
-class AutoInterpreter(ModelNeededDecorators):
-    def __init__(self, interpretation_config: InterpretationConfig):
+class AutoInterpreter:
+    def __init__(self, interpretation_config):
         """
         Class for AutoInterpretation of Sparse Autoencoders trained on Transformer Activations.
         :param interpretation_config: Configuration-Object defining Interpretation process
@@ -47,15 +44,15 @@ class AutoInterpreter(ModelNeededDecorators):
         self.BATCH_SIZE = dataset_batch_size
         self.NUM_TOKENS = num_tokens
 
-        self.ds = TokenizedDatasetPreload(self.interpretation_config.dataset_path, dtype=torch.int, partial_preload=partial_preload)
+        self.ds = Datasets.TokenizedDatasetPreload(self.interpretation_config.dataset_path, dtype=torch.int, partial_preload=partial_preload)
         self.dl = DataLoader(self.ds, batch_size=self.BATCH_SIZE, shuffle=False)    # ToDo: Consider shuffling
 
     def load_target_model(self, device):
         # ToDo: Maybe add float16 constraint
         print("Loading Target Model")
-        self.target_model = CodeLlamaModel(self.interpretation_config.target_model_name, device=device)
+        self.target_model = TransformerModels.CodeLlamaModel(self.interpretation_config.target_model_name, device=device)
 
-    @ModelNeededDecorators.PARAMETER_NEEDED("target_model")
+    @utils.ModelNeededDecorators.PARAMETER_NEEDED("target_model")
     def setup_hook_obtain_interpretation_samples(self):
         layer_id = self.autoencoder_config["LAYER_INDEX"]
         layer_type = self.autoencoder_config["LAYER_TYPE"]
@@ -100,11 +97,11 @@ class AutoInterpreter(ModelNeededDecorators):
     def load_interpretation_model(self, device):
         # ToDo: Maybe add float16 constraint
         print("Loading Interpretation Model")
-        self.interpretation_model = CodeLlamaModel(self.interpretation_config.interpretation_model_name, device=device)
+        self.interpretation_model = TransformerModels.CodeLlamaModel(self.interpretation_config.interpretation_model_name, device=device)
 
     def load_interpretation_model_deepspeed(self, num_gpus=4):
         print("Loading Interpretation Model")
-        self.interpretation_model = CodeLlamaModelDeepspeed(self.interpretation_config.interpretation_model_name, num_gpus)
+        self.interpretation_model = TransformerModels.CodeLlamaModelDeepspeed(self.interpretation_config.interpretation_model_name, num_gpus)
 
     def load_autoencoder(self, device):
         print("Loading AutoEncoder")
@@ -112,13 +109,13 @@ class AutoInterpreter(ModelNeededDecorators):
 
         with open(self.interpretation_config.autoencoder_path, "rb") as f:
             self.autoencoder_config = pickle.load(f)
-        self.autoencoder = load_model_from_config(self.autoencoder_config)
+        self.autoencoder = AutoEncoder.load_model_from_config(self.autoencoder_config)
         self.autoencoder.to(self.autoencoder_device)
 
         self.dict_vecs = []
 
-    @ModelNeededDecorators.PARAMETER_NEEDED("target_model")
-    @ModelNeededDecorators.PARAMETER_NEEDED("ds")
+    @utils.ModelNeededDecorators.PARAMETER_NEEDED("target_model")
+    @utils.ModelNeededDecorators.PARAMETER_NEEDED("ds")
     def obtain_interpretation_samples(self, num_batches, log_freq_lower=-4, log_freq_upper=-3):
         """
         Run num_batches Batches of data through the LLM to do AutoInterpretation on the later.
@@ -196,7 +193,7 @@ class AutoInterpreter(ModelNeededDecorators):
         self.mean_feature_activations = torch.mean(self.rescaled, dim=1)
 
 
-    @ModelNeededDecorators.PARAMETER_NEEDED("rescaled")
+    @utils.ModelNeededDecorators.PARAMETER_NEEDED("rescaled")
     def save_interpretation_samples(self, path):
         with open(path, "wb") as f:
             pickle.dump({
@@ -223,7 +220,7 @@ class AutoInterpreter(ModelNeededDecorators):
 
 
 
-    @ModelNeededDecorators.PARAMETER_NEEDED("rescaled")
+    @utils.ModelNeededDecorators.PARAMETER_NEEDED("rescaled")
     def get_fragment(self, feature_index, i_top_fragments, return_activations=False):
         """
         Returns a Text Fragment on which the given feature_index activates strongly.
@@ -313,7 +310,7 @@ class AutoInterpreter(ModelNeededDecorators):
 
         return user_prompt
 
-    @ModelNeededDecorators.PARAMETER_NEEDED("interpretation_model")
+    @utils.ModelNeededDecorators.PARAMETER_NEEDED("interpretation_model")
     def get_explanation(self, user_prompt):
         """
         Generate the Explanation for a specific Feature.
@@ -380,7 +377,7 @@ Activations:
 
         return user_prompt
 
-    @ModelNeededDecorators.PARAMETER_NEEDED("interpretation_model")
+    @utils.ModelNeededDecorators.PARAMETER_NEEDED("interpretation_model")
     def get_simulation(self, user_prompt, return_raw_simulation=False):
         #ToDo: New Parameters & Return Value
         """
@@ -437,7 +434,7 @@ Activations:
             return kv_dict, raw_simulation
         return kv_dict
 
-    @ModelNeededDecorators.PARAMETER_NEEDED("rescaled")
+    @utils.ModelNeededDecorators.PARAMETER_NEEDED("rescaled")
     def generate_ground_truth_scores(self, feature_index, i_top_fragments):
         """
         Generates the Ground Truth Activation-Sample for a given Text Sample ID.

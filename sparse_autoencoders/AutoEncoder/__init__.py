@@ -1,2 +1,2 @@
 from .AutoEncoder import *
-from .AutoEncoderUtils import *
+import AutoEncoderUtils

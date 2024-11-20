@@ -6,7 +6,6 @@ import torch
 from datasets import load_dataset
 from transformers import CodeLlamaTokenizer
 
-#ToDo: Offload to utils.py
 """
 Classes
 """

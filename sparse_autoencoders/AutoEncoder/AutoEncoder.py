@@ -1,7 +1,7 @@
 import torch
 import os
+
 from sparse_autoencoders.AutoEncoder import AutoEncoderUtils
-from sparse_autoencoders.AutoEncoder.AutoEncoderUtils import save_plotly_graph, generate_loss_curve
 
 
 class AutoEncoderBase(torch.nn.Module):
@@ -68,8 +68,9 @@ class AutoEncoderBase(torch.nn.Module):
 
         return x_hat, f
 
-
-
+    """
+    Loss Methods
+    """
     def loss(self, x, x_hat, f, l1=1):
         raise NotImplementedError("AutoEncoderBase is an interface!")
 
@@ -90,12 +91,6 @@ class AutoEncoderBase(torch.nn.Module):
         if self.training_runs % self.neuron_resampling_interval == 0:
             device = f.device
             with torch.no_grad():
-                # Reinit self.bias_encoder
-                #shape_new_bias_encoder = self.bias_encoder[torch.argwhere(self.summed_f_resampling == 0)].shape
-                #bias_encoder_new_part = torch.zeros(shape_new_bias_encoder)
-                #new_bias_encoder = self.bias_encoder.cpu().clone()
-                #new_bias_encoder[torch.argwhere(self.summed_f_resampling == 0)] = bias_encoder_new_part
-                #self.bias_encoder.data = new_bias_encoder.to(device)
                 # Reinit self.weight_encoder
                 shape_new_weight_encoder = self.weight_encoder[::, torch.argwhere(self.summed_f_resampling == 0)].shape
                 weight_encoder_new_part = torch.nn.init.kaiming_uniform_(torch.zeros(shape_new_weight_encoder))
@@ -173,8 +168,8 @@ class AutoEncoderBase(torch.nn.Module):
             self.count_f_checkpoint = torch.zeros(self.m)
 
             # Save Checkpoint
-            fig = generate_loss_curve(self.reconstruction_losses, self.sparsity_losses)
-            save_plotly_graph(fig, os.path.join(self.IMAGE_PATH, "loss_curve.html"))
+            fig = AutoEncoderUtils.generate_loss_curve(self.reconstruction_losses, self.sparsity_losses)
+            AutoEncoderUtils.save_plotly_graph(fig, os.path.join(self.IMAGE_PATH, "loss_curve.html"))
 
             fig = AutoEncoderUtils.generate_histogram(activation_counts_log10, no_dead_neurons)
             AutoEncoderUtils.save_plotly_graph(fig, os.path.join(self.IMAGE_PATH, f"{self.training_runs}.html"))
@@ -234,8 +229,8 @@ class AutoEncoderAnthropic(AutoEncoderBase):
 
 
 class AutoEncoderAnthropicImproved(AutoEncoderBase):
-    def __init__(self, n, m, l2_decoder_init=0.1, neuron_resampling_method=None, neuron_resampling_interval=25_000, checkpoint_interval=12_500):
-        super().__init__(n, m, neuron_resampling_method, neuron_resampling_interval, checkpoint_interval)
+    def __init__(self, n, m, l2_decoder_init=0.1):
+        super().__init__(n, m)
 
         # Init both Biases with zeros
         self.bias_encoder = torch.nn.Parameter(torch.zeros(m))
@@ -253,22 +248,6 @@ class AutoEncoderAnthropicImproved(AutoEncoderBase):
     """
     Forward Methods
     """
-
-    def forward(self, x):
-        # Neuron Resampling
-        if self.neuron_resampling_method == "replacement":
-            self.neuron_resampling_by_replacement()
-        elif self.neuron_resampling_method == "anthropic":
-            self.neuron_replacement_by_anthropic()
-
-        f = self.forward_encoder(x)
-        x_hat = self.forward_decoder(f)
-
-        # Neuron Resampling
-        if self.neuron_resampling_method is not None:
-            self.summed_f_resampling += torch.sum(f.detach().cpu(), dim=0)
-
-        return x_hat, f
 
     def forward_encoder(self, x):
         f = self.relu(x @ self.weight_encoder + self.bias_encoder)
@@ -296,7 +275,7 @@ class AutoEncoderAnthropicImproved(AutoEncoderBase):
     Neuron Resampling Methods
     """
 
-    def neuron_resampling_by_replacement(self):
+    def neuron_resampling_by_replacement(self, f):
         self.training_runs += 1
         if self.training_runs % self.neuron_resampling_interval == 0:
             with torch.no_grad():
@@ -315,7 +294,7 @@ class AutoEncoderAnthropicImproved(AutoEncoderBase):
             # Reset self.summed_f_resampling
             self.summed_f_resampling = torch.zeros(self.m)
 
-    def neuron_replacement_by_anthropic(self):
+    def neuron_replacement_by_anthropic(self, f):
         raise NotImplementedError("Not implemented yet")
 
 
