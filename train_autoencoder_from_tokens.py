@@ -1,6 +1,13 @@
+import torch
+from torch.utils.data import DataLoader
+
+from sparse_autoencoders.TransformerModels import CodeLlamaModel
+from sparse_autoencoders import AutoEncoder
+from sparse_autoencoders.Datasets import TokenizedDatasetPreload
+
 import argparse
-from utils.TransformerModels import CodeLlamaModel
-from utils.AutoInterpretation import *
+import os
+import tqdm
 
 parser = argparse.ArgumentParser()
 
@@ -252,7 +259,7 @@ Go forth and Transform!
 # Temporary location for the Activation Vectors until they're used for training the AutoEncoder
 raw_activation_vecs = []
 
-model = AutoEncoderAnthropic(ACT_VEC_SIZE, DICT_VEC_SIZE).to(DEVICE_AE)
+model = AutoEncoder.AutoEncoderAnthropic(ACT_VEC_SIZE, DICT_VEC_SIZE).to(DEVICE_AE)
 model.enable_neuron_resampling(NEURON_RESAMPLING_METHOD, NEURON_RESAMPLING_INTERVAL)
 model.enable_checkpointing(LEARNING_RATE, L1_COEFFICIENT, BATCH_SIZE_AE, LAYER_TYPE, LAYER_INDEX, SAVE_PATH,
                            IMAGE_PATH, BATCHES_BETWEEN_CHECKPOINTS)
