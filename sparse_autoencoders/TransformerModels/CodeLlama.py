@@ -13,14 +13,11 @@ class CodeLlamaModel(TransformerModelWrapper):
     def __init__(self, model, tokenizer=None, device="cpu"):
         super().__init__(model, tokenizer=tokenizer, device=device)
 
-        self.device = device
-        self.to(self.device)
-
     def load_model_from_name(self, model_name):
-        self.model = LlamaForCausalLM.from_pretrained(self.model_name)
+        self.model = LlamaForCausalLM.from_pretrained(model_name, torch_dtype=torch.float16)
 
     def load_tokenizer_from_name(self, tokenizer_name):
-        self.tokenizer = CodeLlamaTokenizer.from_pretrained(self.model_name)
+        self.tokenizer = CodeLlamaTokenizer.from_pretrained(tokenizer_name)
 
     def generate_instructive(self, system_prompt, user_prompt, top_p=0.9, temperature=0.1, max_new_tokens=500, add_special_tokens=True):
         prompt = f"[INST]<<SYS>>{system_prompt}<</SYS>>\n{user_prompt}[/INST]"
@@ -47,15 +44,15 @@ class CodeLlamaModel(TransformerModelWrapper):
         return layer_output
 
     def setup_hook(self, hook, layer_id, layer_type):
-        if layer_id < 0 or layer_id >= len(self.target_model.model.layers):
+        if layer_id < 0 or layer_id >= len(self.model.model.layers):
             raise Exception("layer_id not found")
 
         if layer_type == "attn_sublayer":
-            handle = self.target_model.model.layers[layer_id].self_attn.register_forward_hook(hook)
+            handle = self.model.model.layers[layer_id].self_attn.register_forward_hook(hook)
         elif layer_type == "mlp_sublayer":
-            handle = self.target_model.model.layers[layer_id].mlp.register_forward_hook(hook)
+            handle = self.model.model.layers[layer_id].mlp.register_forward_hook(hook)
         elif layer_type == "mlp_activations":
-            handle = self.target_model.model.layers[layer_id].mlp.down_proj.register_forward_hook(hook)
+            handle = self.model.model.layers[layer_id].mlp.down_proj.register_forward_hook(hook)
         else:
             raise Exception("Unrecognized Type of layer_type")
         self.model_hook_handles.append(handle)

@@ -7,7 +7,7 @@ from sparse_autoencoders.Datasets import TokenizedDatasetPreload
 
 import argparse
 import os
-import tqdm
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 
@@ -214,9 +214,11 @@ dataset = TokenizedDatasetPreload(DATASET_PATH, dtype=torch.int)
 dataloader = DataLoader(dataset, batch_size=BATCH_SIZE_LLM, shuffle=True)
 
 # If NUM_TOKENS == 0, use all available Tokens
-# next(iter(dataloader)) is of shape [BATCH_SIZE_LLM, NUM_TOKENS, ACT_VEC_SIZE]
+# next(iter(dataloader)) is of shape [BATCH_SIZE_LLM, NUM_TOKENS]
 if NUM_TOKENS == 0:
-    NUM_TOKENS = next(iter(dataloader)).shape[-2]
+    NUM_TOKENS = next(iter(dataloader)).shape[-1]
+
+print(f"using {NUM_TOKENS} tokens")
 
 # Load Target Model
 target_model = CodeLlamaModel(TARGET_MODEL_NAME, device=DEVICE_LLM)
@@ -289,7 +291,7 @@ else:
     num_batches_to_train = int((BATCH_SIZE_LLM / BATCH_SIZE_AE) * NUM_TOKENS * len(dataloader))
 
 training_pbar = tqdm(desc="Training", total=num_batches_to_train)
-buffer_pbar = tqdm(desc="Filling up Buffer", total=NUM_BATCHES_PRELOAD * (BATCH_SIZE_AE / BATCH_SIZE_LLM))
+buffer_pbar = tqdm(desc="Filling up Buffer", total=NUM_BATCHES_PRELOAD)
 
 for input_ids in dataloader:
     # Generate Activation Vectors if NUM_BATCHES_PRELOAD is not met
@@ -298,10 +300,11 @@ for input_ids in dataloader:
         input_ids_cuda = cropped_input_ids.to(DEVICE_LLM)
 
         target_model.run_model_until_layer(input_ids_cuda, LAYER_INDEX)
-        buffer_pbar.update_to(NUM_TOKENS * len(raw_activation_vecs))
-        #print(NUM_TOKENS * len(raw_activation_vecs) / (NUM_BATCHES_PRELOAD * (BATCH_SIZE_AE / BATCH_SIZE_LLM)))
+        buffer_pbar.update(int(NUM_TOKENS * BATCH_SIZE_LLM / BATCH_SIZE_AE))
 
         continue
+
+    buffer_pbar.reset()
 
 
     # Prepare Batches, if enough Activation Vectors Sampled

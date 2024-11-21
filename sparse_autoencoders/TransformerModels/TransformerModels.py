@@ -13,6 +13,7 @@ class TransformerModelWrapper:
             self.tokenizer = tokenizer
 
         self.device = device
+        self.to(device)
 
         self.model_hook_handles = []
 

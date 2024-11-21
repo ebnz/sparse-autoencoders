@@ -63,7 +63,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--min_tokens",
-    default=250,
+    default=64,
     type=int,
     help="Number of minimum Tokens one Context has to contain in order to be used in the generated Dataset"
 )
@@ -84,7 +84,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--dataset_name",
-    default="bigcode/the-stack",
+    default="bigcode/the-stack-dedup",
     type=str,
     help="HuggingFace-Name for Dataset to load data from"
 )

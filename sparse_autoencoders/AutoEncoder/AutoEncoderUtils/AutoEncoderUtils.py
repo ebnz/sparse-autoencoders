@@ -48,6 +48,11 @@ def save_plotly_graph(fig, save_path):
 CHECKPOINTING
 """
 def save_autoencoder_checkpoint(model_conf, save_path):
+    # Move State-Dict to CPU, for successful loading on a CPU-only machine
+    state_dict_cpu = {k: v.cpu() for k, v in model_conf["STATE_DICT"].items()}
+    model_conf["STATE_DICT"] = state_dict_cpu
+
+    # Save to disk
     with open(save_path, "wb") as f:
         pickle.dump(model_conf, f)
 
