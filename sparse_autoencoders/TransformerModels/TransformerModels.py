@@ -9,6 +9,8 @@ class TransformerModelWrapper:
             raise AttributeError("Must specify tokenizer when passing loaded Model as model and not str")
         elif isinstance(tokenizer, str):
             self.load_tokenizer_from_name(tokenizer)
+        elif tokenizer is None and isinstance(model, str):
+            self.load_tokenizer_from_name(model)
         else:
             self.tokenizer = tokenizer
 

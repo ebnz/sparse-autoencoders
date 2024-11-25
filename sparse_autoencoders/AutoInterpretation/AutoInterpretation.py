@@ -240,11 +240,11 @@ class AutoInterpreter:
             self.fragments = obj["fragments"]
             self.rescaled = obj["rescaled"]
             self.mean_feature_activations = obj["mean_feature_activations"]
-            self.activation_counts_log10 = obj["act_counts_log10"]
+            #self.activation_counts_log10 = obj["act_counts_log10"]
 
-            self.interpretable_neuron_mask = torch.bitwise_and(self.activation_counts_log10 > -4,
-                                                               self.activation_counts_log10 < -3)
-            self.interpretable_neuron_indices = torch.where(self.interpretable_neuron_mask)[0]
+            #self.interpretable_neuron_mask = torch.bitwise_and(self.activation_counts_log10 > -4,
+            #                                                   self.activation_counts_log10 < -3)
+            self.interpretable_neuron_indices = obj["interpretable_neuron_indices"]
 
 
 
@@ -311,7 +311,7 @@ class AutoInterpreter:
             )
 
             for i in range(min([len(fragment), self.NUM_TOKENS])):
-                token = self.target_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]
+                token = self.interpretation_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]
                 activation = int(rescaled_per_token_feature_acts[i])
                 user_prompt += f"* {token} \x09 {activation} \n"
 
@@ -330,7 +330,7 @@ class AutoInterpreter:
                 )
             for i in range(min([len(fragment), self.NUM_TOKENS])):
                 if int(rescaled_per_token_feature_acts[i]) != 0:
-                    token = self.target_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]
+                    token = self.interpretation_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]
                     activation = int(rescaled_per_token_feature_acts[i])
                     user_prompt += f"* {token} \x09 {activation} \n"
 
@@ -352,7 +352,7 @@ class AutoInterpreter:
         prompt = f"[INST]<<SYS>>{self.interpretation_config.interpretation_system_prompt}<</SYS>>\n{user_prompt}[/INST]"
 
         # Generate Explanation, raw_explanation consists of complete answer of LLM including initial prompt
-        raw_explanation = self.interpretation_model.generate_raw_interpretation_model(prompt, max_new_tokens=100)
+        raw_explanation = self.interpretation_model.generate_on_prompt(prompt, max_new_tokens=100)
 
         explanation = (raw_explanation.split("[/INST]")[-1]
                        .replace('</s>', '')
@@ -398,8 +398,8 @@ Activations:
 <start>
 '''
 
-        for i in range(len(fragment[0])):
-            token = self.interpretation_model.tokenizer.convert_ids_to_tokens([fragment[0][i]])[0]
+        for i in range(len(fragment)):
+            token = self.interpretation_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]
             user_prompt += f"* {token} \x09 <unknown> \n"
 
         user_prompt += ("<end>\n\nInfer the unknown activations of Neuron 2 as a list of numerical values "
@@ -420,7 +420,7 @@ Activations:
         prompt = f"[INST]<<SYS>>{self.interpretation_config.simulation_system_prompt}<</SYS>>\n{user_prompt}[/INST]"
 
         # Generate Explanation, raw_explanation consists of complete answer of LLM including initial prompt
-        raw_simulation = self.interpretation_model.generate_raw_interpretation_model(prompt, max_new_tokens=1000)
+        raw_simulation = self.interpretation_model.generate_on_prompt(prompt, max_new_tokens=1000)
 
         # ToDo: Remove, implement original behavior
         return raw_simulation
@@ -484,8 +484,8 @@ Activations:
 
         kv_dict = {}
 
-        for i in range(len(fragment[0])):
-            key = f"{self.target_model.tokenizer.convert_ids_to_tokens([fragment[0][i]])[0]}"
+        for i in range(len(fragment)):
+            key = f"{self.target_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]}"
             value = int(rescaled_per_token_feature_acts[i])
 
             kv_dict[key] = value

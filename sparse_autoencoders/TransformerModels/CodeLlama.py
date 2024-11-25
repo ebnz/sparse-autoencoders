@@ -69,3 +69,6 @@ class CodeLlamaModelDeepspeed(CodeLlamaModel):
                                                    checkpoint=None,
                                                    replace_with_kernel_inject=False)
         self.model = ds_engine_large.module
+
+        # Manually set device for DeepSpeed
+        self.device = "cuda"

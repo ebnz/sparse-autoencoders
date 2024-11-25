@@ -29,9 +29,7 @@ interpreter.load_interpretation_samples("/nfs/data/students/ebenz_bsc2024/interp
 
 print(interpreter.mean_feature_activations.shape)
 print(interpreter.mean_feature_activations.dtype)
-print(interpreter.activation_counts_log10.shape)
 print(interpreter.interpretable_neuron_indices)
-print(interpreter.activation_counts_log10[interpreter.interpretable_neuron_indices])
 
 
 
@@ -68,10 +66,11 @@ for idx, feature_index in enumerate(interpreter.interpretable_neuron_indices):
     if local_rank == 0:
         #print(interpretation)
         #print("---------------------------------------------------------")
+        print(idx)
         file.write(simulation)
         file.write("---------------------------------------------------------")
 
-    if idx >= 100:
+    if idx >= 20:
         if local_rank == 0:
             file.close()
         break
