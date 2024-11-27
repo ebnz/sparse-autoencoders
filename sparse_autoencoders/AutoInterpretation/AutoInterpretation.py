@@ -4,6 +4,8 @@ from tqdm import tqdm
 
 from sparse_autoencoders import AutoEncoder, TransformerModels, Datasets, utils
 
+from sparse_autoencoders.AutoInterpretation.TokenScoreRegexFilter import RegexException
+
 import pickle
 from itertools import product
 import re
@@ -411,10 +413,10 @@ Activations:
 
     @utils.ModelNeededDecorators.PARAMETER_NEEDED("interpretation_model")
     def get_simulation(self, user_prompt, return_raw_simulation=False):
-        #ToDo: New Parameters & Return Value
         """
         Runs a simulation prompt on the Interpretation Model and retrieves the inferred activations.
         :param user_prompt: User Prompt which infers the Neuron activations
+        :param return_raw_simulation: Whether to return the raw Simulation-Output from the Interpretation-LLM
         :return: List of tuples containing the inferred neuron activations
         """
 
@@ -452,9 +454,13 @@ Activations:
                     # Skip Filter if no match
                     continue
 
-                # If Match, extract Token and Score and append to kv_dict
-                token = regex_filter.get_token(line)
-                score = regex_filter.get_score(line)
+                try:
+                    # If Match, extract Token and Score and append to kv_dict
+                    token = regex_filter.get_token(line)
+                    score = regex_filter.get_score(line)
+                except RegexException as e:
+                    print(e)
+                    continue
 
                 kv_dict[token] = score
 
@@ -510,6 +516,9 @@ def calculate_correlation_from_kv_dict(kv_dict_gt, kv_dict_simulated):
     return float(corr_mat[0, 1])
 
 
+"""
+Simulation Helper-Functions
+"""
 def apply_dict_replacement(inp_str, replacement_dict):
     out_str = inp_str
 
@@ -517,6 +526,7 @@ def apply_dict_replacement(inp_str, replacement_dict):
         out_str = out_str.replace(key, replacement_dict[key])
 
     return out_str
+
 
 def remove_leading_asterisk(line):
     if line.startswith("* "):
