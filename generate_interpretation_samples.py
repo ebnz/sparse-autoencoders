@@ -38,13 +38,6 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--interpretation_model_name",
-    default="codellama/CodeLlama-34b-Instruct-hf",
-    type=str,
-    help="ID of Layer from which the Activations are obtained"
-)
-
-parser.add_argument(
     "--target_model_device",
     default="cuda:0",
     type=str,
@@ -52,7 +45,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--interpretation_model_device",
+    "--autoencoder_device",
     default="cuda:1",
     type=str,
     help="ID of Layer from which the Activations are obtained"
@@ -70,10 +63,9 @@ AUTOENCODER_PATH = args.autoencoder_path
 SAVE_PATH = args.save_path
 
 TARGET_MODEL_NAME = args.target_model_name
-INTERPRETATION_MODEL_NAME = args.interpretation_model_name
 
 TARGET_MODEL_DEVICE = args.target_model_device
-INTERPRETATION_MODEL_DEVICE = args.interpretation_model_device
+AUTOENCODER_DEVICE = args.autoencoder_device
 
 """
 interpretation_config = InterpretationConfig(
@@ -84,10 +76,14 @@ interpretation_config = InterpretationConfig(
 )
 """
 
+"""
+Obtain Interpretation Samples
+"""
+
 interpretation_config = InterpretationConfig(
     DATASET_PATH,
     TARGET_MODEL_NAME,
-    INTERPRETATION_MODEL_NAME,
+    "",
     AUTOENCODER_PATH
 )
 
@@ -95,6 +91,7 @@ interpreter = AutoInterpreter(interpretation_config)
 
 interpreter.load_dataset()
 interpreter.load_target_model(TARGET_MODEL_DEVICE)
-interpreter.load_autoencoder(INTERPRETATION_MODEL_DEVICE)
+interpreter.load_autoencoder(AUTOENCODER_DEVICE)
+
 interpreter.obtain_interpretation_samples(NUM_SAMPLES)
 interpreter.save_interpretation_samples(SAVE_PATH)
