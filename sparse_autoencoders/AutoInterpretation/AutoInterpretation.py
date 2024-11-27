@@ -38,6 +38,8 @@ class AutoInterpreter:
 
         self.target_model_hook_handles = []
 
+        self.simulation_filters = interpretation_config.simulation_filters
+
     def load_dataset(self, dataset_batch_size=8, num_tokens=64, partial_preload=None):
         print("Loading Dataset")
 
@@ -422,9 +424,6 @@ Activations:
         # Generate Explanation, raw_explanation consists of complete answer of LLM including initial prompt
         raw_simulation = self.interpretation_model.generate_on_prompt(prompt, max_new_tokens=1000)
 
-        # ToDo: Remove, implement original behavior
-        return raw_simulation
-
         simulation = (raw_simulation.split("[/INST]")[-1]
                       .replace('</s>', '')
                       .replace('<s>', '')
@@ -435,30 +434,16 @@ Activations:
 
         lines = list(filter(filter_crit_new_line, simulation.split("\n")))
 
-        replacements_dict = {
-            "The word": "",
-            "The letter": "",
-            ": ": " ",
+        replacement_dict = {
+            "\n": "",
             "\t": "",
-            "´": "",
-            "`": ""
+            "  ": " ",
         }
 
         for raw_line in lines:
-            line = do_replacements(raw_line, replacements_dict)
+            line = do_replacements(raw_line, replacement_dict)
 
-            regex = "[ ]*\*.*[ ]*[0-9]+"
-            score_regex = "[0-9]+"
-            match_object = re.search(regex, line)
-            if match_object is None:
-                continue
-            score_match_object = re.search(score_regex, line[::-1])
-            if score_match_object is None:
-                continue
-            token_str = line.split(" ")[1]
-            score_str = score_match_object.group()[::-1]
-
-            kv_dict[token_str] = score_str
+            # ToDo: Implement
 
 
 
