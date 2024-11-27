@@ -432,7 +432,7 @@ Activations:
 
         kv_dict = {}
 
-        lines = list(filter(filter_crit_new_line, simulation.split("\n")))
+        lines = list(simulation.split("\n"))
 
         replacement_dict = {
             "\n": "",
@@ -441,12 +441,25 @@ Activations:
         }
 
         for raw_line in lines:
-            line = do_replacements(raw_line, replacement_dict)
+            # Apply Replacements in <replacement_dict> and remove leading Asterisk in each line
+            line = apply_dict_replacement(raw_line, replacement_dict)
+            line = remove_leading_asterisk(line)
 
-            # ToDo: Implement
+            for regex_filter in self.simulation_filters:
+                # Check each provided TokenScoreRegexFilter for match
+                does_match = regex_filter.match(line)
+                if not does_match:
+                    # Skip Filter if no match
+                    continue
 
+                # If Match, extract Token and Score and append to kv_dict
+                token = regex_filter.get_token(line)
+                score = regex_filter.get_score(line)
 
+                kv_dict[token] = score
 
+                # If Filter Matches, skip all following Filters and proceed with next Line
+                break
 
         if return_raw_simulation:
             return kv_dict, raw_simulation
@@ -497,76 +510,15 @@ def calculate_correlation_from_kv_dict(kv_dict_gt, kv_dict_simulated):
     return float(corr_mat[0, 1])
 
 
-def do_replacements(inp_str, replacements_dict):
+def apply_dict_replacement(inp_str, replacement_dict):
     out_str = inp_str
 
-    for key in replacements_dict.keys():
-        out_str = out_str.replace(key, replacements_dict[key])
+    for key in replacement_dict.keys():
+        out_str = out_str.replace(key, replacement_dict[key])
 
     return out_str
 
-#Methods for Simulation-Parsing
-def filter_crit_new_line(line):
-    line_starts = ["  *", " *", "*"]
-    for item in line_starts:
-        if line.startswith(item):
-            return True
-    return False
-
-def find_score(line):
-    sequences = line.replace("\n", "").split(" ")
-    score = None
-    for sequence in sequences:
-        if ":" in sequence and sequence.replace(":", "").isnumeric():
-            score = int(sequence.replace(":", ""))
-        if sequence.isnumeric():
-            score = int(sequence)
-    return score
-
-def check_regex_forward_tick(line):
-    regex = '`.*`'
-    match_object = re.search(regex, line)
-    if match_object is None:
-        return False
-    return match_object.group().replace('`', ""), line
-
-def check_regex_backward_tick(line):
-    regex = '´.*´'
-    match_object = re.search(regex, line)
-    if match_object is None:
-        return False
-    return match_object.group().replace('´', ""), line
-
-def check_regex_quotes(line):
-    regex = '".*"'
-    match_object = re.search(regex, line)
-    if match_object is None:
-        return False
-    return match_object.group().replace('"', ""), line
-
-def check_regex_colon(line):
-    regex = "[ ]*\*.*:[ ]*[0-9]"
-    match_object = re.search(regex, line)
-    if match_object is None:
-        return False
-    for sequence in line.split(" "):
-        if ":" in sequence:
-            return sequence[:-1], line
-
-def check_regex_explained(line):
-    regex = "[ ]*\*.*[0-9]:.*"
-    match_object = re.search(regex, line)
-    if match_object is None:
-        return False
-    for idx, sequence in enumerate(line.split(" ")):
-        if ":" in sequence:
-            return line.split(" ")[idx - 1], line[:line.index(":")]
-
-def check_regex_tab(line):
-    regex = "[ ]*\*.*[	 ]*[0-9]"
-    match_object = re.search(regex, line)
-    if match_object is None:
-        return False
-    if len(line.split("\t")) >= 2:
-        return line.split("\t")[0].replace(" ", "").replace("*", "").replace("\t", ""), line
-    return False
+def remove_leading_asterisk(line):
+    if line.startswith("* "):
+        return line[2:]
+    return line
