@@ -104,10 +104,15 @@ for idx, feature_index in enumerate(interpreter.interpretable_neuron_indices):
     interpretation = interpreter.get_explanation(user_prompt_interpretation)
 
     user_prompt_simulation = interpreter.generate_simulation_prompt(feature_index, NUM_SIMULATION_SAMPLES, interpretation)
-    simulation = interpreter.get_simulation(user_prompt_simulation)
+
+    scores_simulated = interpreter.get_simulation(user_prompt_simulation)
+    scores_gt = interpreter.generate_ground_truth_scores(feature_index, NUM_SIMULATION_SAMPLES)
 
     if local_rank == 0:
-        file.write(simulation)
+        file.write("\nSimulated\n")
+        file.write(scores_simulated)
+        file.write("\nGround Truth\n")
+        file.write(scores_gt)
         file.write("\n---------------------------------------------------------\n")
         progress_bar.update(1)
 
