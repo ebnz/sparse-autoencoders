@@ -57,12 +57,17 @@ parser.add_argument(
     help="Number of Simulation Samples to use"
 )
 
+parser.add_argument(
+    "--local_rank",
+    default=0,
+    type=int,
+    help="Local Rank"
+)
+
 """
 Parse Arguments
 """
 args = parser.parse_args()
-
-NUM_SAMPLES = args.num_samples
 
 DATASET_PATH = args.dataset_path
 AUTOENCODER_PATH = args.autoencoder_path
@@ -110,9 +115,9 @@ for idx, feature_index in enumerate(interpreter.interpretable_neuron_indices):
 
     if local_rank == 0:
         file.write("\nSimulated\n")
-        file.write(scores_simulated)
+        file.write(str(scores_simulated))
         file.write("\nGround Truth\n")
-        file.write(scores_gt)
+        file.write(str(scores_gt))
         file.write("\n---------------------------------------------------------\n")
         progress_bar.update(1)
 

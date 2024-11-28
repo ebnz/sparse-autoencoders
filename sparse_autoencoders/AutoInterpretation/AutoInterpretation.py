@@ -489,7 +489,7 @@ Activations:
         kv_dict = {}
 
         for i in range(len(fragment)):
-            key = f"{self.target_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]}"
+            key = f"{self.interpretation_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]}"
             value = int(rescaled_per_token_feature_acts[i])
 
             kv_dict[key] = value
