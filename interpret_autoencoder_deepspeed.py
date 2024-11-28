@@ -12,28 +12,28 @@ parser.add_argument(
     "--dataset_path",
     default="./tokenized_dataset",
     type=str,
-    help="ID of Layer from which the Activations are obtained"
+    help="Path of Tokenized Dataset to use for Obtaining Interpretation Samples"
 )
 
 parser.add_argument(
     "--autoencoder_path",
     default="./autoencoder.pt",
     type=str,
-    help="ID of Layer from which the Activations are obtained"
+    help="Path of Autoencoder Model to analyze"
 )
 
 parser.add_argument(
     "--interpretation_samples_path",
     default="./interpretation_samples.pt",
     type=str,
-    help="ID of Layer from which the Activations are obtained"
+    help="Path of the saved Interpretation-Samples"
 )
 
 parser.add_argument(
     "--interpretation_model_name",
     default="codellama/CodeLlama-34b-Instruct-hf",
     type=str,
-    help="ID of Layer from which the Activations are obtained"
+    help="Name of Interpretation-Model. Currently, only CodeLlama-Models are supported"
 )
 
 parser.add_argument(
