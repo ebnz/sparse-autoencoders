@@ -68,15 +68,6 @@ TARGET_MODEL_DEVICE = args.target_model_device
 AUTOENCODER_DEVICE = args.autoencoder_device
 
 """
-interpretation_config = InterpretationConfig(
-    "/nfs/data/students/ebenz_bsc2024/tokenized_dataset",
-    "codellama/CodeLlama-7b-Instruct-hf",
-    "codellama/CodeLlama-34b-Instruct-hf",
-    "/nfs/data/students/ebenz_bsc2024/autoenc_2/autoenc_lr2e-4_0.5_32_nr/50000.pt"
-)
-"""
-
-"""
 Obtain Interpretation Samples
 """
 

@@ -1,5 +1,4 @@
 import argparse
-import os
 from tqdm import tqdm
 
 from sparse_autoencoders.AutoInterpretation import *
@@ -80,6 +79,8 @@ NUM_GPUS = args.num_gpus
 NUM_INTERPRETATION_SAMPLES = args.num_interpretation_samples
 NUM_SIMULATION_SAMPLES = args.num_simulation_samples
 
+LOCAL_RANK = args.local_rank
+
 """
 Interpretation
 """
@@ -91,15 +92,13 @@ interpretation_config = InterpretationConfig(
     ""
 )
 
-local_rank = int(os.getenv("LOCAL_RANK", "0"))
-
 interpreter = AutoInterpreter(interpretation_config)
 interpreter.load_dataset()
 interpreter.load_interpretation_model_deepspeed(NUM_GPUS)
 interpreter.load_interpretation_samples(INTERPRETATION_SAMPLES_PATH)
 
 
-if local_rank == 0:
+if LOCAL_RANK == 0:
     file = open("/nfs/home/ebenz_bsc2024/sims.txt", "w")
 
 progress_bar = tqdm(desc="Interpretation", total=20)
@@ -113,7 +112,7 @@ for idx, feature_index in enumerate(interpreter.interpretable_neuron_indices):
     scores_simulated = interpreter.get_simulation(user_prompt_simulation)
     scores_gt = interpreter.generate_ground_truth_scores(feature_index, NUM_SIMULATION_SAMPLES)
 
-    if local_rank == 0:
+    if LOCAL_RANK == 0:
         file.write("\nSimulated\n")
         file.write(str(scores_simulated))
         file.write("\nGround Truth\n")
@@ -122,6 +121,6 @@ for idx, feature_index in enumerate(interpreter.interpretable_neuron_indices):
         progress_bar.update(1)
 
     if idx >= 20:
-        if local_rank == 0:
+        if LOCAL_RANK == 0:
             file.close()
         break
