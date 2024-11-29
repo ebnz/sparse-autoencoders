@@ -283,18 +283,20 @@ class AutoInterpreter:
         :return: User Prompt
         """
 
+        # Obtain complete texts
         complete_texts = []
-
         for i_top_fragments in range(num_top_fragments):
-            fragment, _ = self.get_fragment(
+            fragment = self.get_fragment(
                 feature_index,
                 i_top_fragments,
-                return_activations=True
+                return_activations=False
             )
 
             text = self.interpretation_model.tokenizer.batch_decode([fragment])[0]
             complete_texts.append(text)
 
+        # Obtain Tokens and Activations of Fragments
+        tokens, activations = []
         for i_top_fragments in range(num_top_fragments):
             fragment, rescaled_per_token_feature_acts = self.get_fragment(
                 feature_index,
@@ -305,9 +307,11 @@ class AutoInterpreter:
             tokens = self.interpretation_model.tokenizer.convert_ids_to_tokens(fragment[:self.NUM_TOKENS])
             activations = rescaled_per_token_feature_acts[:self.NUM_TOKENS]
 
-        # List Tokens
-        # List Tokens zeros filtered out
-
+        user_prompt = self.interpretation_config.prompt_builder.get_interpretation_prompt(
+            complete_texts,
+            tokens,
+            activations
+        )
 
         return user_prompt
 
