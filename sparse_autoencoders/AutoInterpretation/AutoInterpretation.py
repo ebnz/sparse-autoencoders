@@ -349,37 +349,9 @@ class AutoInterpreter:
         """
 
         fragment = self.get_fragment(feature_index, i_top_fragments)
+        tokens = self.interpretation_model.tokenizer.convert_ids_to_tokens(fragment[:self.NUM_TOKENS])
 
-        user_prompt = f'''
-Neuron 1: 
-Explanation of neuron 1 behavior: the main thing this neuron does is find phrases related to community. 
-Activations: 
-<start>
-* the \x09 0
-* sense \x09 0
-* of \x09 7
-* together \x09 7
-* ness \x09 7
-* in \x09 0
-* our \x09 0
-* town \x09 1
-* is \x09 0
-* strong \x09 0
-* . \x09 0
-<end>
-
-Neuron 2: 
-Explanation of neuron 2 behavior: {explanation}
-Activations: 
-<start>
-'''
-
-        for i in range(len(fragment)):
-            token = self.interpretation_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]
-            user_prompt += f"* {token} \x09 <unknown> \n"
-
-        user_prompt += ("<end>\n\nInfer the unknown activations of Neuron 2 as a list of numerical values "
-                        "ranging from 0-10. One value per token.")
+        user_prompt = self.interpretation_config.prompt_generator.get_simulation_prompt(tokens, explanation)
 
         return user_prompt
 
