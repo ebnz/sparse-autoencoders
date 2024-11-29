@@ -75,7 +75,8 @@ interpretation_config = InterpretationConfig(
     DATASET_PATH,
     TARGET_MODEL_NAME,
     "",
-    AUTOENCODER_PATH
+    AUTOENCODER_PATH,
+    CodeLlamaPromptGenerator()
 )
 
 interpreter = AutoInterpreter(interpretation_config)

@@ -49,10 +49,9 @@ class AutoInterpreter:
         self.NUM_TOKENS = num_tokens
 
         self.ds = Datasets.TokenizedDatasetPreload(self.interpretation_config.dataset_path, dtype=torch.int, partial_preload=partial_preload)
-        self.dl = DataLoader(self.ds, batch_size=self.BATCH_SIZE, shuffle=False)    # ToDo: Consider shuffling
+        self.dl = DataLoader(self.ds, batch_size=self.BATCH_SIZE, shuffle=False)
 
     def load_target_model(self, device):
-        # ToDo: Maybe add float16 constraint
         print("Loading Target Model")
         self.target_model = TransformerModels.CodeLlamaModel(self.interpretation_config.target_model_name, device=device)
 
@@ -116,7 +115,6 @@ class AutoInterpreter:
             self.target_model.setup_hook(mlp_hook_inputs, layer_id, layer_type)
 
     def load_interpretation_model(self, device):
-        # ToDo: Maybe add float16 constraint
         print("Loading Interpretation Model")
         self.interpretation_model = TransformerModels.CodeLlamaModel(self.interpretation_config.interpretation_model_name, device=device)
 
@@ -244,10 +242,6 @@ class AutoInterpreter:
             self.fragments = obj["fragments"]
             self.rescaled = obj["rescaled"]
             self.mean_feature_activations = obj["mean_feature_activations"]
-            #self.activation_counts_log10 = obj["act_counts_log10"]
-
-            #self.interpretable_neuron_mask = torch.bitwise_and(self.activation_counts_log10 > -4,
-            #                                                   self.activation_counts_log10 < -3)
             self.interpretable_neuron_indices = obj["interpretable_neuron_indices"]
 
     @utils.ModelNeededDecorators.PARAMETER_NEEDED("rescaled")
