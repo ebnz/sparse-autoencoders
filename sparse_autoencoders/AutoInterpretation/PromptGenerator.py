@@ -3,18 +3,45 @@ import torch
 
 class PromptGeneratorBase:
     def __init__(self):
+        self.interpretation_system_prompt = ""
+        self.simulation_system_prompt = ""
         raise NotImplementedError("Class PromptGeneratorBase is an Interface")
 
-    def get_interpretation_prompt(self):
+    def get_interpretation_prompt(self, complete_texts, tokens, activations):
         raise NotImplementedError("Class PromptGeneratorBase is an Interface")
 
-    def get_simulation_prompt(self):
+    def get_interpretation_system_prompt(self):
+        return self.interpretation_system_prompt
+
+    def get_simulation_prompt(self, tokens, explanation):
         raise NotImplementedError("Class PromptGeneratorBase is an Interface")
+
+    def get_simulation_system_prompt(self):
+        return self.simulation_system_prompt
 
 
 class CodeLlamaPromptGenerator(PromptGeneratorBase):
     def __init__(self):
         super().__init__()
+
+        self.interpretation_system_prompt = (
+            "We're studying neurons in a neural network. Each neuron looks for some particular "
+            "thing in a short document. Look at the parts of the document the neuron "
+            "activates for and summarize in a single sentence what the neuron is looking for. "
+            "Don't list examples of words. \n The activation format is token<tab>activation. "
+            "Activation values range from 0 to 10. A neuron finding what it's looking for is "
+            "represented by a non-zero activation value. The higher the activation value, "
+            "the stronger the match.")
+
+        self.simulation_system_prompt = (
+            "We're studying neurons in a neural network. "
+            "Each neuron looks for some particular thing in a short document. "
+            "Look at an explanation of what the neuron does, "
+            "and try to predict its activations on each particular token. \n The activation "
+            "format is token<tab>activation, and activations range from 0 to 10. "
+            "A neuron finding what it's looking for is represented by a non-zero activation "
+            "value. The higher the activation value, the stronger the match. "
+            "Most activations will be 0.")
 
     def get_interpretation_prompt(self, complete_texts, tokens, activations):
         # Cast to Python-List if needed

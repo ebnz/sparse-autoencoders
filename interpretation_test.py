@@ -62,7 +62,7 @@ for idx, feature_index in enumerate(interpreter.interpretable_neuron_indices):
     user_prompt_interpretation = interpreter.generate_interpretation_prompt(feature_index, 3)
     interpretation = interpreter.get_explanation(user_prompt_interpretation)
     user_prompt_simulation = interpreter.generate_simulation_prompt(feature_index, 3, interpretation)
-    simulation = interpreter.get_simulation(user_prompt_simulation, return_raw_simulation=True)
+    simulation = interpreter.get_simulation(user_prompt_simulation, raw=True)
     if local_rank == 0:
         #print(interpretation)
         #print("---------------------------------------------------------")

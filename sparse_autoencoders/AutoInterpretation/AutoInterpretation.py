@@ -318,11 +318,9 @@ class AutoInterpreter:
         :return: Explanation of the Neuron's behavior
         """
 
-        # Generate Prompt from user_prompt and system_prompt
-        prompt = f"[INST]<<SYS>>{self.interpretation_config.interpretation_system_prompt}<</SYS>>\n{user_prompt}[/INST]"
-
         # Generate Explanation, raw_explanation consists of complete answer of LLM including initial prompt
-        raw_explanation = self.interpretation_model.generate_on_prompt(prompt, max_new_tokens=100)
+        system_prompt = self.interpretation_config.prompt_generator.get_interpretation_system_prompt()
+        raw_explanation = self.interpretation_model.generate_instructive(system_prompt, user_prompt, max_new_tokens=100)
 
         explanation = (raw_explanation.split("[/INST]")[-1]
                        .replace('</s>', '')
@@ -350,19 +348,17 @@ class AutoInterpreter:
         return user_prompt
 
     @utils.ModelNeededDecorators.PARAMETER_NEEDED("interpretation_model")
-    def get_simulation(self, user_prompt, return_raw_simulation=False):
+    def get_simulation(self, user_prompt, raw=False):
         """
         Runs a simulation prompt on the Interpretation Model and retrieves the inferred activations.
         :param user_prompt: User Prompt which infers the Neuron activations
-        :param return_raw_simulation: Whether to return the raw Simulation-Output from the Interpretation-LLM
+        :param raw: Whether to return the raw Simulation-Output from the Interpretation-LLM
         :return: List of tuples containing the inferred neuron activations
         """
 
-        # Generate Prompt from user_prompt and system_prompt
-        prompt = f"[INST]<<SYS>>{self.interpretation_config.simulation_system_prompt}<</SYS>>\n{user_prompt}[/INST]"
-
         # Generate Explanation, raw_explanation consists of complete answer of LLM including initial prompt
-        raw_simulation = self.interpretation_model.generate_on_prompt(prompt, max_new_tokens=1000)
+        system_prompt = self.interpretation_config.get_simulation_system_prompt()
+        raw_simulation = self.interpretation_model.generate_instructive(system_prompt, user_prompt, max_new_tokens=1000)
 
         simulation = (raw_simulation.split("[/INST]")[-1]
                       .replace('</s>', '')
@@ -414,7 +410,7 @@ class AutoInterpreter:
 
         kv_dict_rescaled = {key: (10 / (maximum - minimum)) * (kv_dict[key] - minimum) for key in kv_dict}
 
-        if return_raw_simulation:
+        if raw:
             return kv_dict_rescaled, raw_simulation
         return kv_dict_rescaled
 

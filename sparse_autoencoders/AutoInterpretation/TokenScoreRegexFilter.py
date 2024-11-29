@@ -70,7 +70,7 @@ class TokenScoreRegexFilterAverage(TokenScoreRegexFilter):
             try:
                 score_val = int(score)
                 score_sum += score_val
-            except Exception:
+            except TypeError:
                 print(f"WARN: <{score}> can't be casted to int")
                 continue
 
