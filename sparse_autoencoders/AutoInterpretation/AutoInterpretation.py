@@ -269,11 +269,6 @@ class AutoInterpreter:
         fragment_idx = self.fragments[tf_id]
         fragment = self.ds[self.BATCH_SIZE * fragment_idx[0] + fragment_idx[1]]
 
-        # ToDo: Remove
-        #print(f"Used fragment_idx: {fragment_idx}")
-        #text = self.target_model.tokenizer.batch_decode([fragment])[0]
-        #print(text)
-
         if return_activations:
             rescaled_per_token_feature_acts = self.rescaled[tf_id, :, feature_index]
             return fragment, rescaled_per_token_feature_acts
@@ -288,21 +283,17 @@ class AutoInterpreter:
         :return: User Prompt
         """
 
-        user_prompt = "Neuron: \n"
-        user_prompt += "The complete documents: \n\n"
+        complete_texts = []
 
         for i_top_fragments in range(num_top_fragments):
-            fragment, rescaled_per_token_feature_acts = self.get_fragment(
+            fragment, _ = self.get_fragment(
                 feature_index,
                 i_top_fragments,
                 return_activations=True
             )
 
             text = self.interpretation_model.tokenizer.batch_decode([fragment])[0]
-            user_prompt += f"{text}\n\n"
-
-        user_prompt += "Activations: \n"
-        user_prompt += "<start>\n"
+            complete_texts.append(text)
 
         for i_top_fragments in range(num_top_fragments):
             fragment, rescaled_per_token_feature_acts = self.get_fragment(
@@ -311,29 +302,12 @@ class AutoInterpreter:
                 return_activations=True
             )
 
-            for i in range(min([len(fragment), self.NUM_TOKENS])):
-                token = self.interpretation_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]
-                activation = int(rescaled_per_token_feature_acts[i])
-                user_prompt += f"* {token} \x09 {activation} \n"
+            tokens = self.interpretation_model.tokenizer.convert_ids_to_tokens(fragment[:self.NUM_TOKENS])
+            activations = rescaled_per_token_feature_acts[:self.NUM_TOKENS]
 
-        user_prompt += "<end>\n"
-        user_prompt += "Same activations, but with all zeros filtered out: \n"
-        user_prompt += "<start>\n"
+        # List Tokens
+        # List Tokens zeros filtered out
 
-        for i_top_fragments in range(num_top_fragments):
-            fragment, rescaled_per_token_feature_acts = self.get_fragment(
-                feature_index,
-                i_top_fragments,
-                return_activations=True
-                )
-            for i in range(min([len(fragment), self.NUM_TOKENS])):
-                if int(rescaled_per_token_feature_acts[i]) != 0:
-                    token = self.interpretation_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]
-                    activation = int(rescaled_per_token_feature_acts[i])
-                    user_prompt += f"* {token} \x09 {activation} \n"
-
-        user_prompt += "<end>\n"
-        user_prompt += "\n \n"
 
         return user_prompt
 

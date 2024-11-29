@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import torch
+
 from sparse_autoencoders.AutoInterpretation.TokenScoreRegexFilter import *
 
 """
@@ -7,7 +9,7 @@ Dataclasses for Interpretation
 """
 @dataclass
 class InterpretationConfig:
-    dataset_path: str   #"/nfs/data/students/ebenz_bsc2024/multip_stack_tokenized"
+    dataset_path: str
 
     target_model_name: str
 
@@ -27,6 +29,8 @@ class InterpretationConfig:
                                 "thing in a short document. Look at an explanation of what the neuron does, "
                                 "and try to predict its activations on each particular token. \n The activation "
                                 "format is token<tab>activation, and activations range from 0 to 10. A neuron finding what it's looking for is represented by a non-zero activation value. The higher the activation value, the stronger the match. Most activations will be 0.")
+
+    def simulation_prompt_builder(self):
 
     token_replacement_chars = {
         "▁": ""
@@ -89,3 +93,59 @@ class InterpretationConfig:
     TokenScoreRegexFilter('.+[ \t]+[0-9]?[0-9]?', '\A.+ ', '[0-9]+\Z')
     .set_token_cropping(0, 1)
 ]
+
+
+class PromptGeneratorBase:
+    def __init__(self):
+        raise NotImplementedError("Class PromptGeneratorBase is an Interface")
+
+    def get_interpretation_prompt(self):
+        raise NotImplementedError("Class PromptGeneratorBase is an Interface")
+
+    def get_simulation_prompt(self):
+        raise NotImplementedError("Class PromptGeneratorBase is an Interface")
+
+class CodeLlamaPromptGenerator(PromptGeneratorBase):
+    def __init__(self):
+        super().__init__()
+
+    def get_interpretation_prompt(self, complete_texts, tokens, activations):
+        # Cast to Python-List if needed
+        if isinstance(tokens, torch.Tensor):
+            tokens = tokens.tolist()
+
+        if isinstance(activations, torch.Tensor):
+            activations = activations.tolist()
+
+        # Map activations to int
+        activations = map(int, activations)
+
+        # List all complete Text-Fragments
+        user_prompt = "Neuron: \n"
+        user_prompt += "The complete documents: \n\n"
+
+        for text in complete_texts:
+            user_prompt += f"{text}\n\n"
+
+        # List all Tokens with Activations
+        user_prompt += "Activations: \n"
+        user_prompt += "<start>\n"
+
+        for token, activation in zip(tokens, activations):
+            user_prompt += f"* {token} \x09 {activation} \n"
+
+        user_prompt += "<end>\n"
+
+        # List all Tokens with zeros filtered out
+        user_prompt += "Same activations, but with all zeros filtered out: \n"
+        user_prompt += "<start>\n"
+
+        for token, activation in zip(tokens, activations):
+            if activation != 0:
+                user_prompt += f"* {token} \x09 {activation} \n"
+
+        user_prompt += "<end>\n"
+        user_prompt += "\n \n"
+
+    def get_simulation_prompt(self):
+        pass
