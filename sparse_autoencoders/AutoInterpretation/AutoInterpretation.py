@@ -250,9 +250,6 @@ class AutoInterpreter:
             #                                                   self.activation_counts_log10 < -3)
             self.interpretable_neuron_indices = obj["interpretable_neuron_indices"]
 
-
-
-
     @utils.ModelNeededDecorators.PARAMETER_NEEDED("rescaled")
     def get_fragment(self, feature_index, i_top_fragments, return_activations=False):
         """
@@ -318,9 +315,6 @@ class AutoInterpreter:
                 token = self.interpretation_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]
                 activation = int(rescaled_per_token_feature_acts[i])
                 user_prompt += f"* {token} \x09 {activation} \n"
-
-        # ToDo: Remove
-        #return user_prompt
 
         user_prompt += "<end>\n"
         user_prompt += "Same activations, but with all zeros filtered out: \n"
@@ -462,14 +456,23 @@ Activations:
                     print(e)
                     continue
 
+                # Replace unwanted Characters in the Token
+                token = token.replace("▁", "")
+
                 kv_dict[token] = score
 
                 # If Filter Matches, skip all following Filters and proceed with next Line
                 break
 
+        # Rescale all Token Scores to 0-10 (Sometimes the Interpretation-LLM outputs only binary/0-1)
+        maximum = max(kv_dict.values())
+        minimum = min(kv_dict.values())
+
+        kv_dict_rescaled = {key: (10 / (maximum - minimum)) * (kv_dict[key] - minimum) for key in kv_dict}
+
         if return_raw_simulation:
-            return kv_dict, raw_simulation
-        return kv_dict
+            return kv_dict_rescaled, raw_simulation
+        return kv_dict_rescaled
 
     @utils.ModelNeededDecorators.PARAMETER_NEEDED("rescaled")
     def generate_ground_truth_scores(self, feature_index, i_top_fragments):
@@ -491,6 +494,8 @@ Activations:
         for i in range(len(fragment)):
             key = f"{self.interpretation_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]}"
             value = int(rescaled_per_token_feature_acts[i])
+
+            key = key.replace("▁", "")
 
             kv_dict[key] = value
 
