@@ -28,6 +28,10 @@ class InterpretationConfig:
                                 "and try to predict its activations on each particular token. \n The activation "
                                 "format is token<tab>activation, and activations range from 0 to 10. A neuron finding what it's looking for is represented by a non-zero activation value. The higher the activation value, the stronger the match. Most activations will be 0.")
 
+    token_replacement_chars = {
+        "▁": ""
+    }
+
     # Hierarchy:
     # * "for": 8 (high activation value, as it is a keyword that the neuron is looking for)
     # * "Fix": 10

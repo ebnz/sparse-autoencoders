@@ -457,7 +457,7 @@ Activations:
                     continue
 
                 # Replace unwanted Characters in the Token
-                token = token.replace("▁", "")
+                token = apply_dict_replacement(token, self.interpretation_config.token_replacement_chars)
 
                 kv_dict[token] = score
 
@@ -495,7 +495,8 @@ Activations:
             key = f"{self.interpretation_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]}"
             value = int(rescaled_per_token_feature_acts[i])
 
-            key = key.replace("▁", "")
+            # Replace unwanted Characters in the Token
+            key = apply_dict_replacement(key, self.interpretation_config.token_replacement_chars)
 
             kv_dict[key] = value
 
