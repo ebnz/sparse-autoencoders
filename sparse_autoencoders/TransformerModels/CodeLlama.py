@@ -44,7 +44,7 @@ class CodeLlamaModel(TransformerModelWrapper):
         return layer_output
 
     def setup_hook(self, hook, layer_id, layer_type, permanent=False):
-        if layer_id < 0 or layer_id >= len(self.model.model.layers) or layer_id is None:
+        if layer_id is not None and (layer_id < 0 or layer_id >= len(self.model.model.layers)):
             raise Exception("layer_id not found")
 
         if layer_type == "attn_sublayer":
@@ -59,10 +59,10 @@ class CodeLlamaModel(TransformerModelWrapper):
                 # ToDo: ugly as hell, tidy up
                 attribute = self.model.model.layers[layer_id] if layer_id is not None else self.model.model
                 for attribute_name in layer_type.split("."):
-                    attribute = attribute.__getattribute__(attribute_name)
+                    attribute = getattr(attribute, attribute_name)
                 handle = attribute.register_forward_hook(hook)
             except AttributeError:
-                raise AttributeError("Unrecognized Type of layer_type")
+                raise AttributeError(f"Unrecognized Type of layer_type: <{attribute_name}> in attribute <{attribute}>")
         if not permanent:
             self.model_hook_handles.append(handle)
 
