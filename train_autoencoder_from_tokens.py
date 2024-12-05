@@ -238,20 +238,20 @@ def hook_attn(module, input, output):
     # Append each MLP-/Attention-Activations to raw_activation_vecs
     raw_activation_vecs.append(output[0].detach().cpu())
 
-def hook_mlp_inputs(module, input, output):
+def hook_mlp_acts(module, input, output):
     global raw_activation_vecs
 
     # Append each MLP-/Attention-Activations to raw_activation_vecs
-    raw_activation_vecs.append(input[0].detach().cpu())
+    raw_activation_vecs.append(output.detach().cpu())
 
 if LAYER_TYPE == "mlp_sublayer":
     target_model.setup_hook(hook_mlp, LAYER_INDEX, LAYER_TYPE)
 elif LAYER_TYPE == "attn_sublayer":
     target_model.setup_hook(hook_attn, LAYER_INDEX, LAYER_TYPE)
 elif LAYER_TYPE == "mlp_activations":
-    target_model.setup_hook(hook_mlp_inputs, LAYER_INDEX, LAYER_TYPE)
+    target_model.setup_hook(hook_mlp_acts, LAYER_INDEX, LAYER_TYPE)
 else:
-    raise Exception("Unrecognized Type of layer_type")
+    raise AttributeError("Unrecognized Type of layer_type")
 
 
 """

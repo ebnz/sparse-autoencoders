@@ -69,8 +69,8 @@ class AutoInterpreter:
             activations = output[0].detach().cpu()
             self.autoencoder(activations.to(self.autoencoder_device, torch.float32))
 
-        def mlp_hook_inputs(model, input, output):
-            activations = input[0].detach().cpu()
+        def mlp_hook_acts(model, input, output):
+            activations = output.detach().cpu()
             self.autoencoder(activations.to(self.autoencoder_device, torch.float32))
 
         if layer_type == "attn_sublayer":
@@ -78,7 +78,7 @@ class AutoInterpreter:
         elif layer_type == "mlp_sublayer":
             self.target_model.setup_hook(mlp_hook, layer_id, layer_type)
         elif layer_type == "mlp_activations":
-            self.target_model.setup_hook(mlp_hook_inputs, layer_id, layer_type)
+            self.target_model.setup_hook(mlp_hook_acts, layer_id, layer_type)
 
     @utils.ModelNeededDecorators.PARAMETER_NEEDED("target_model")
     def setup_hook_obtain_interpretation_samples(self):
@@ -100,8 +100,8 @@ class AutoInterpreter:
             dict_vec = f.detach().cpu()[::, ::, self.interpretable_neuron_indices]
             self.dict_vecs.append(dict_vec)
 
-        def mlp_hook_inputs(model, input, output):
-            activations = input[0].detach().cpu()
+        def mlp_hook_acts(model, input, output):
+            activations = output.detach().cpu()
             X_hat, f = self.autoencoder(activations.to(self.autoencoder_device, torch.float32))
             # Only select the Features with log-Frequency between boundaries set in function obtain_interpretation_samples
             dict_vec = f.detach().cpu()[::, ::, self.interpretable_neuron_indices]
@@ -112,7 +112,7 @@ class AutoInterpreter:
         elif layer_type == "mlp_sublayer":
             self.target_model.setup_hook(mlp_hook, layer_id, layer_type)
         elif layer_type == "mlp_activations":
-            self.target_model.setup_hook(mlp_hook_inputs, layer_id, layer_type)
+            self.target_model.setup_hook(mlp_hook_acts, layer_id, layer_type)
 
     def load_interpretation_model(self, device):
         print("Loading Interpretation Model")

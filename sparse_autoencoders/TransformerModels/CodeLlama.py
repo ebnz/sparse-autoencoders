@@ -52,7 +52,7 @@ class CodeLlamaModel(TransformerModelWrapper):
         elif layer_type == "mlp_sublayer":
             handle = self.model.model.layers[layer_id].mlp.register_forward_hook(hook)
         elif layer_type == "mlp_activations":
-            handle = self.model.model.layers[layer_id].mlp.down_proj.register_forward_hook(hook)
+            handle = self.model.model.layers[layer_id].mlp.act_fn.register_forward_hook(hook)
         else:
             try:
                 # Recursively get Attributes
