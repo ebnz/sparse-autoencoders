@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from sparse_autoencoders import AutoEncoder, TransformerModels, Datasets, utils
+from sparse_autoencoders.utils import apply_dict_replacement, remove_leading_asterisk
 
 from sparse_autoencoders.AutoInterpretation.TokenScoreRegexFilter import RegexException
 
@@ -290,7 +291,7 @@ class AutoInterpreter:
             complete_texts.append(text)
 
         # Obtain Tokens and Activations of Fragments
-        tokens, activations = []
+        tokens, activations = [], []
         for i_top_fragments in range(num_top_fragments):
             fragment, rescaled_per_token_feature_acts = self.get_fragment(
                 feature_index,
@@ -441,40 +442,3 @@ class AutoInterpreter:
             kv_dict[key] = value
 
         return kv_dict
-
-
-def calculate_correlation_from_kv_dict(kv_dict_gt, kv_dict_simulated):
-    """
-    Calculates the correlation between two Activation-Samples.
-    :param kv_dict_gt: Ground Truth Activation Sample
-    :param kv_dict_simulated: Simulated Activation Sample
-    :return: Correlation Score of Activation Samples
-    """
-
-    datapoints = []
-    for key_gt, key_simulated in product(kv_dict_gt, kv_dict_simulated):
-        if key_gt == key_simulated:
-            datapoints.append([kv_dict_gt[key_gt], kv_dict_simulated[key_simulated]])
-
-    datapoints_tensor = torch.Tensor(datapoints).T
-    corr_mat = torch.corrcoef(datapoints_tensor)
-
-    return float(corr_mat[0, 1])
-
-
-"""
-Simulation Helper-Functions
-"""
-def apply_dict_replacement(inp_str, replacement_dict):
-    out_str = inp_str
-
-    for key in replacement_dict.keys():
-        out_str = out_str.replace(key, replacement_dict[key])
-
-    return out_str
-
-
-def remove_leading_asterisk(line):
-    if line.startswith("* "):
-        return line[2:]
-    return line

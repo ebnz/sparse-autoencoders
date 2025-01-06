@@ -56,6 +56,20 @@ class TokenScoreRegexFilter:
             return score[self.crop_score_start::]
         return score[self.crop_score_start:(-1) * self.crop_score_end]
 
+    def bulk_get_tokens_scores(self, lines):
+        tokens, scores = [], []
+        for line in lines:
+            if self.match(line):
+                try:
+                    token = self.get_token(line)
+                    score = self.get_score(line)
+                except RegexException:
+                    continue
+                tokens.append(token)
+                scores.append(score)
+
+        return tokens, scores
+
 
 class TokenScoreRegexFilterAverage(TokenScoreRegexFilter):
     def __init__(self, search_regex, token_regex, score_regex):

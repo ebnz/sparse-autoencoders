@@ -2,6 +2,7 @@ import argparse
 from tqdm import tqdm
 
 from sparse_autoencoders.AutoInterpretation import *
+from sparse_autoencoders.utils import calculate_correlation_from_kv_dict
 
 # ToDo: Implement Uploading data to ElasticIndex
 
@@ -63,6 +64,18 @@ parser.add_argument(
     help="Local Rank"
 )
 
+parser.add_argument(
+    "server_address",
+    type=str,
+    help="Address to ElasticSearch-Server (e.g. https://DOMAIN:PORT)"
+)
+
+parser.add_argument(
+    "api_key",
+    type=str,
+    help="API-Key to ElasticSearch-Server"
+)
+
 """
 Parse Arguments
 """
@@ -81,6 +94,12 @@ NUM_SIMULATION_SAMPLES = args.num_simulation_samples
 
 LOCAL_RANK = args.local_rank
 
+# ElasticSearch info
+INDEX_NAME = AUTOENCODER_PATH.replace("/", "_")
+
+SERVER_ADDRESS = args.server_address
+API_KEY = args.api_key
+
 """
 Interpretation
 """
@@ -98,30 +117,34 @@ interpreter.load_dataset()
 interpreter.load_interpretation_model_deepspeed(NUM_GPUS)
 interpreter.load_interpretation_samples(INTERPRETATION_SAMPLES_PATH)
 
-
 if LOCAL_RANK == 0:
-    file = open("/nfs/home/ebenz_bsc2024/sims.txt", "w")
+    # Open ElasticSearch-Connection
+    # ToDo: Handle Cert validation
+    client = Elasticsearch(SERVER_ADDRESS, api_key=API_KEY, verify_certs=False)
 
-progress_bar = tqdm(desc="Interpretation", total=20)
+NUM_INTERPRETABLE_FEATURES = len(interpreter.interpretable_neuron_indices)
+progress_bar = tqdm(desc="Interpretation", total=NUM_INTERPRETABLE_FEATURES)
 
 for idx, feature_index in enumerate(interpreter.interpretable_neuron_indices):
+    # Interpretation
     user_prompt_interpretation = interpreter.generate_interpretation_prompt(feature_index, NUM_INTERPRETATION_SAMPLES)
     interpretation = interpreter.get_explanation(user_prompt_interpretation)
 
+    # Simulation
     user_prompt_simulation = interpreter.generate_simulation_prompt(feature_index, NUM_SIMULATION_SAMPLES, interpretation)
 
     scores_simulated = interpreter.get_simulation(user_prompt_simulation)
     scores_gt = interpreter.generate_ground_truth_scores(feature_index, NUM_SIMULATION_SAMPLES)
 
-    if LOCAL_RANK == 0:
-        file.write("\nSimulated\n")
-        file.write(str(scores_simulated))
-        file.write("\nGround Truth\n")
-        file.write(str(scores_gt))
-        file.write("\n---------------------------------------------------------\n")
-        progress_bar.update(1)
+    correlation_score = calculate_correlation_from_kv_dict(scores_gt, scores_simulated)
 
-    if idx >= 20:
-        if LOCAL_RANK == 0:
-            file.close()
-        break
+    tokens = []
+
+    for token in scores_gt:
+        if scores_gt[token] > 0:
+            tokens.append(token)
+
+    if LOCAL_RANK == 0:
+        document = {"tokens": tokens, "score": correlation_score, "interpretation": interpretation}
+        client.create(document=document, index=INDEX_NAME, id=feature_index)
+        progress_bar.update(1)

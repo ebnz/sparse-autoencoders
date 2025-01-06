@@ -5,7 +5,6 @@ class PromptGeneratorBase:
     def __init__(self):
         self.interpretation_system_prompt = ""
         self.simulation_system_prompt = ""
-        raise NotImplementedError("Class PromptGeneratorBase is an Interface")
 
     def get_interpretation_prompt(self, complete_texts, tokens, activations):
         raise NotImplementedError("Class PromptGeneratorBase is an Interface")
