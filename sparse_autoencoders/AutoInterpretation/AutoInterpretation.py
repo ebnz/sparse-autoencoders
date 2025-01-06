@@ -8,7 +8,6 @@ from sparse_autoencoders.utils import apply_dict_replacement, remove_leading_ast
 from sparse_autoencoders.AutoInterpretation.TokenScoreRegexFilter import RegexException
 
 import pickle
-from itertools import product
 import re
 
 
@@ -320,7 +319,7 @@ class AutoInterpreter:
         """
 
         # Generate Explanation, raw_explanation consists of complete answer of LLM including initial prompt
-        system_prompt = self.interpretation_config.prompt_generator.get_interpretation_system_prompt()
+        system_prompt = self.interpretation_config.prompt_builder.get_interpretation_system_prompt()
         raw_explanation = self.interpretation_model.generate_instructive(system_prompt, user_prompt, max_new_tokens=100)
 
         explanation = (raw_explanation.split("[/INST]")[-1]
@@ -344,7 +343,7 @@ class AutoInterpreter:
         fragment = self.get_fragment(feature_index, i_top_fragments)
         tokens = self.interpretation_model.tokenizer.convert_ids_to_tokens(fragment[:self.NUM_TOKENS])
 
-        user_prompt = self.interpretation_config.prompt_generator.get_simulation_prompt(tokens, explanation)
+        user_prompt = self.interpretation_config.prompt_builder.get_simulation_prompt(tokens, explanation)
 
         return user_prompt
 
@@ -358,7 +357,7 @@ class AutoInterpreter:
         """
 
         # Generate Explanation, raw_explanation consists of complete answer of LLM including initial prompt
-        system_prompt = self.interpretation_config.get_simulation_system_prompt()
+        system_prompt = self.interpretation_config.prompt_builder.get_simulation_system_prompt()
         raw_simulation = self.interpretation_model.generate_instructive(system_prompt, user_prompt, max_new_tokens=1000)
 
         simulation = (raw_simulation.split("[/INST]")[-1]
@@ -400,7 +399,7 @@ class AutoInterpreter:
                 # Replace unwanted Characters in the Token
                 token = apply_dict_replacement(token, self.interpretation_config.token_replacement_chars)
 
-                kv_dict[token] = score
+                kv_dict[token] = int(score)
 
                 # If Filter Matches, skip all following Filters and proceed with next Line
                 break
@@ -409,6 +408,7 @@ class AutoInterpreter:
         maximum = max(kv_dict.values())
         minimum = min(kv_dict.values())
 
+        # ToDo: Division by Zero exception possible
         kv_dict_rescaled = {key: (10 / (maximum - minimum)) * (kv_dict[key] - minimum) for key in kv_dict}
 
         if raw:

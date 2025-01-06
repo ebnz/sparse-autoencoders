@@ -1,5 +1,6 @@
 import argparse
 from tqdm import tqdm
+from elasticsearch import Elasticsearch
 
 from sparse_autoencoders.AutoInterpretation import *
 from sparse_autoencoders.utils import calculate_correlation_from_kv_dict
@@ -95,7 +96,7 @@ NUM_SIMULATION_SAMPLES = args.num_simulation_samples
 LOCAL_RANK = args.local_rank
 
 # ElasticSearch info
-INDEX_NAME = AUTOENCODER_PATH.replace("/", "_")
+INDEX_NAME = AUTOENCODER_PATH.replace("/", "")
 
 SERVER_ADDRESS = args.server_address
 API_KEY = args.api_key
