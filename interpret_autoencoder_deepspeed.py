@@ -5,8 +5,6 @@ from elasticsearch import Elasticsearch
 from sparse_autoencoders.AutoInterpretation import *
 from sparse_autoencoders.utils import calculate_correlation_from_kv_dict
 
-# ToDo: Implement Uploading data to ElasticIndex
-
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
@@ -66,6 +64,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--ssl_cert",
+    default="",
+    type=str,
+    help="Path to SSL-Cert of ElasticSearch"
+)
+
+parser.add_argument(
     "server_address",
     type=str,
     help="Address to ElasticSearch-Server (e.g. https://DOMAIN:PORT)"
@@ -92,6 +97,8 @@ NUM_GPUS = args.num_gpus
 
 NUM_INTERPRETATION_SAMPLES = args.num_interpretation_samples
 NUM_SIMULATION_SAMPLES = args.num_simulation_samples
+
+SSL_CERT_PATH = args.ssl_cert
 
 LOCAL_RANK = args.local_rank
 
@@ -120,8 +127,11 @@ interpreter.load_interpretation_samples(INTERPRETATION_SAMPLES_PATH)
 
 if LOCAL_RANK == 0:
     # Open ElasticSearch-Connection
-    # ToDo: Handle Cert validation
-    client = Elasticsearch(SERVER_ADDRESS, api_key=API_KEY, verify_certs=False)
+    if SSL_CERT_PATH == "":
+        print("WARN: Skipping the SSL-Cert-Verification. Provide a Path to a SSL-Certificate in non-protected Networks")
+        client = Elasticsearch(SERVER_ADDRESS, api_key=API_KEY, verify_certs=False)
+    else:
+        client = Elasticsearch(SERVER_ADDRESS, api_key=API_KEY, verify_certs=True, ca_certs=SSL_CERT_PATH)
 
 NUM_INTERPRETABLE_FEATURES = len(interpreter.interpretable_neuron_indices)
 progress_bar = tqdm(desc="Interpretation", total=NUM_INTERPRETABLE_FEATURES)

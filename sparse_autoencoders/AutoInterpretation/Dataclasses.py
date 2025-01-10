@@ -18,10 +18,6 @@ class InterpretationConfig:
 
     prompt_builder: PromptGeneratorBase
 
-    token_replacement_chars = {
-        "▁": ""
-    }
-
     # Hierarchy:
     # * "for": 8 (high activation value, as it is a keyword that the neuron is looking for)
     # * "Fix": 10

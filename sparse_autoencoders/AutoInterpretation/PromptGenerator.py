@@ -1,10 +1,17 @@
 import torch
 
+from sparse_autoencoders.utils import apply_dict_replacement
 
 class PromptGeneratorBase:
     def __init__(self):
         self.interpretation_system_prompt = ""
         self.simulation_system_prompt = ""
+
+        # Replacements to be done in tokens (e.g. "_ing" -> "ing")
+        self.token_replacements = {}
+
+        # Replacements to be done on LLM-Outputs (e.g. "</s>" -> "")
+        self.output_replacements = {}
 
     def get_interpretation_prompt(self, complete_texts, tokens, activations):
         raise NotImplementedError("Class PromptGeneratorBase is an Interface")
@@ -18,11 +25,15 @@ class PromptGeneratorBase:
     def get_simulation_system_prompt(self):
         return self.simulation_system_prompt
 
+    def extract_llm_output(self, raw_output):
+        raise NotImplementedError("Class PromptGeneratorBase is an Interface")
+
 
 class CodeLlamaPromptGenerator(PromptGeneratorBase):
     def __init__(self):
         super().__init__()
 
+        # Prompts from https://openaipublic.blob.core.windows.net/neuron-explainer/paper/index.html
         self.interpretation_system_prompt = (
             "We're studying neurons in a neural network. Each neuron looks for some particular "
             "thing in a short document. Look at the parts of the document the neuron "
@@ -41,6 +52,17 @@ class CodeLlamaPromptGenerator(PromptGeneratorBase):
             "A neuron finding what it's looking for is represented by a non-zero activation "
             "value. The higher the activation value, the stronger the match. "
             "Most activations will be 0.")
+
+        self.token_replacements = {
+            "▁": ""
+        }
+
+        self.output_replacements = {
+            "</s>": "",
+            "<s>": "",
+            "[/INST]": "",
+            "[INST]": ""
+        }
 
     def get_interpretation_prompt(self, complete_texts, tokens, activations):
         # Cast to Python-List if needed
@@ -125,3 +147,7 @@ Activations:
                         "ranging from 0-10. One value per token.")
 
         return user_prompt
+
+    def extract_llm_output(self, raw_output):
+        generated_text = raw_output.split("[/INST]")[-1]
+        return apply_dict_replacement(generated_text, self.output_replacements)

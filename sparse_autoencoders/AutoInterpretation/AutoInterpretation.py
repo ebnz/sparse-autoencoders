@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from sparse_autoencoders import AutoEncoder, TransformerModels, Datasets, utils
+from sparse_autoencoders import AutoEncoder, TransformerModels, Datasets, utils, InterpretationConfig
 from sparse_autoencoders.utils import apply_dict_replacement, remove_leading_asterisk
 
 from sparse_autoencoders.AutoInterpretation.TokenScoreRegexFilter import RegexException
@@ -12,7 +12,7 @@ import re
 
 
 class AutoInterpreter:
-    def __init__(self, interpretation_config):
+    def __init__(self, interpretation_config: InterpretationConfig):
         """
         Class for AutoInterpretation of Sparse Autoencoders trained on Transformer Activations.
         :param interpretation_config: Configuration-Object defining Interpretation process
@@ -56,32 +56,7 @@ class AutoInterpreter:
         self.target_model = TransformerModels.CodeLlamaModel(self.interpretation_config.target_model_name, device=device)
 
     @utils.ModelNeededDecorators.PARAMETER_NEEDED("target_model")
-    def setup_hook_obtain_frequency_information(self):
-        layer_id = self.autoencoder_config["LAYER_INDEX"]
-        layer_type = self.autoencoder_config["LAYER_TYPE"]
-
-        # Set Target-Model-Hook
-        def mlp_hook(module, input, output):
-            activations = output.detach().cpu()
-            self.autoencoder(activations.to(self.autoencoder_device, torch.float32))
-
-        def attn_hook(module, input, output):
-            activations = output[0].detach().cpu()
-            self.autoencoder(activations.to(self.autoencoder_device, torch.float32))
-
-        def mlp_hook_acts(model, input, output):
-            activations = output.detach().cpu()
-            self.autoencoder(activations.to(self.autoencoder_device, torch.float32))
-
-        if layer_type == "attn_sublayer":
-            self.target_model.setup_hook(attn_hook, layer_id, layer_type)
-        elif layer_type == "mlp_sublayer":
-            self.target_model.setup_hook(mlp_hook, layer_id, layer_type)
-        elif layer_type == "mlp_activations":
-            self.target_model.setup_hook(mlp_hook_acts, layer_id, layer_type)
-
-    @utils.ModelNeededDecorators.PARAMETER_NEEDED("target_model")
-    def setup_hook_obtain_interpretation_samples(self):
+    def setup_sae_hook(self, save_dict_vecs=False):
         layer_id = self.autoencoder_config["LAYER_INDEX"]
         layer_type = self.autoencoder_config["LAYER_TYPE"]
 
@@ -89,23 +64,26 @@ class AutoInterpreter:
         def mlp_hook(module, input, output):
             activations = output.detach().cpu()
             X_hat, f = self.autoencoder(activations.to(self.autoencoder_device, torch.float32))
-            # Only select the Features with log-Frequency between boundaries set in function obtain_interpretation_samples
-            dict_vec = f.detach().cpu()[::, ::, self.interpretable_neuron_indices]
-            self.dict_vecs.append(dict_vec)
+            if save_dict_vecs:
+                # Only select the Features with log-Frequency between boundaries set in obtain_interpretation_samples
+                dict_vec = f.detach().cpu()[::, ::, self.interpretable_neuron_indices]
+                self.dict_vecs.append(dict_vec)
 
         def attn_hook(module, input, output):
             activations = output[0].detach().cpu()
             X_hat, f = self.autoencoder(activations.to(self.autoencoder_device, torch.float32))
-            # Only select the Features with log-Frequency between boundaries set in function obtain_interpretation_samples
-            dict_vec = f.detach().cpu()[::, ::, self.interpretable_neuron_indices]
-            self.dict_vecs.append(dict_vec)
+            if save_dict_vecs:
+                # Only select the Features with log-Frequency between boundaries set in obtain_interpretation_samples
+                dict_vec = f.detach().cpu()[::, ::, self.interpretable_neuron_indices]
+                self.dict_vecs.append(dict_vec)
 
         def mlp_hook_acts(model, input, output):
             activations = output.detach().cpu()
             X_hat, f = self.autoencoder(activations.to(self.autoencoder_device, torch.float32))
-            # Only select the Features with log-Frequency between boundaries set in function obtain_interpretation_samples
-            dict_vec = f.detach().cpu()[::, ::, self.interpretable_neuron_indices]
-            self.dict_vecs.append(dict_vec)
+            if save_dict_vecs:
+                # Only select the Features with log-Frequency between boundaries set in obtain_interpretation_samples
+                dict_vec = f.detach().cpu()[::, ::, self.interpretable_neuron_indices]
+                self.dict_vecs.append(dict_vec)
 
         if layer_type == "attn_sublayer":
             self.target_model.setup_hook(attn_hook, layer_id, layer_type)
@@ -116,11 +94,17 @@ class AutoInterpreter:
 
     def load_interpretation_model(self, device):
         print("Loading Interpretation Model")
-        self.interpretation_model = TransformerModels.CodeLlamaModel(self.interpretation_config.interpretation_model_name, device=device)
+        self.interpretation_model = TransformerModels.CodeLlamaModel(
+            self.interpretation_config.interpretation_model_name,
+            device=device
+        )
 
     def load_interpretation_model_deepspeed(self, num_gpus=4):
         print("Loading Interpretation Model")
-        self.interpretation_model = TransformerModels.CodeLlamaModelDeepspeed(self.interpretation_config.interpretation_model_name, num_gpus)
+        self.interpretation_model = TransformerModels.CodeLlamaModelDeepspeed(
+            self.interpretation_config.interpretation_model_name,
+            num_gpus
+        )
 
     def load_autoencoder(self, device):
         print("Loading AutoEncoder")
@@ -145,7 +129,7 @@ class AutoInterpreter:
         :return: Nothing
         """
 
-        self.setup_hook_obtain_frequency_information()
+        self.setup_sae_hook(save_dict_vecs=False)
         self.autoencoder.enable_checkpointing(self.autoencoder_config["LEARNING_RATE"],
                                               self.autoencoder_config["L1_COEFFICIENT"],
                                               self.autoencoder_config["BATCH_SIZE_TRAINING"],
@@ -154,75 +138,75 @@ class AutoInterpreter:
                                               "", "", 999_999_999)
 
         # Number of Transformer-Runs for Frequency-Information Obtaining
-        num_freq_info_runs = int(100 * (10 ** (-1 * log_freq_lower)) / (self.BATCH_SIZE * self.NUM_TOKENS))
+        # Inverse Probability for least probable neuron to activate
+        inv_prob_least_probable_neuron = 10 ** (-1 * log_freq_lower)
+        # Use 100 * Inverse Probability for least probable neuron to activate as amount of LLM-Runs
+        # This ensures, that each Neuron activated at least a specific times for Feature Freq. Obtaining
+        num_freq_info_runs = int(100 * inv_prob_least_probable_neuron / (self.BATCH_SIZE * self.NUM_TOKENS))
 
         print("Obtaining Feature Frequency Information")
         with tqdm(total=num_freq_info_runs) as pbar:
             for idx, input_ids in enumerate(self.dl):
-                cropped_input_ids = input_ids[::, :self.NUM_TOKENS]     #Crop sequences of input ids to length NUM_TOKENS
-                input_ids_cuda = cropped_input_ids.to(self.target_model.device)     #Send to proper device
+                # Crop sequences of input ids to length NUM_TOKENS, Send to proper device
+                cropped_input_ids = input_ids[::, :self.NUM_TOKENS]
+                input_ids_cuda = cropped_input_ids.to(self.target_model.device)
 
-                #Run Model
+                # Run Model, Update Progress-Bar and stop progress, if amount of batches reached
                 self.target_model.run_model_until_layer(input_ids_cuda, self.autoencoder_config["LAYER_INDEX"])
-                #Update Progress-Bar and stop progress, if amount of batches reached
                 pbar.update(1)
                 if idx >= num_freq_info_runs - 1:
                     break
 
-        # Calculate Neurons in Histogram-Range
+        # Calculate Activation frequency of each Neuron
         self.activation_counts_log10, _ = self.autoencoder.calculate_activation_counts(
             log10=True,
             num_samples=num_batches * self.BATCH_SIZE * self.NUM_TOKENS
         )
+
+        # Calculate Neurons in specific Activation-Frequency-Range
         interpretable_neuron_mask_raw = torch.bitwise_and(self.activation_counts_log10 > log_freq_lower,
                                                           self.activation_counts_log10 < log_freq_upper)
+        # Filter out inf's/-inf's
         self.interpretable_neuron_mask = torch.bitwise_and(interpretable_neuron_mask_raw,
                                                            torch.isfinite(self.activation_counts_log10))
+        # Obtain Feature-Indices
         self.interpretable_neuron_indices = torch.where(self.interpretable_neuron_mask)[0]
 
-        print(self.autoencoder.count_f_checkpoint)
-        print(self.activation_counts_log10)
-        print(torch.sum(self.interpretable_neuron_indices))
-
-
         print("Obtaining Interpretation Samples")
-        self.setup_hook_obtain_interpretation_samples()
+        self.setup_sae_hook(save_dict_vecs=True)
         with tqdm(total=num_batches) as pbar:
             for idx, input_ids in enumerate(self.dl):
-                cropped_input_ids = input_ids[::, :self.NUM_TOKENS]     #Crop sequences of input ids to length NUM_TOKENS
-                input_ids_cuda = cropped_input_ids.to(self.target_model.device)     #Send to proper device
+                # Crop sequences of input ids to length NUM_TOKENS, Send to proper device
+                cropped_input_ids = input_ids[::, :self.NUM_TOKENS]
+                input_ids_cuda = cropped_input_ids.to(self.target_model.device)
 
-                #Run Model
+                # Run Model, Update Progress-Bar and stop progress, if amount of batches reached
                 self.target_model.run_model_until_layer(input_ids_cuda, self.autoencoder_config["LAYER_INDEX"])
 
-                #Append each processed Batch-Index to self.fragments
+                # Only append index. Real Fragment-Text is saved in Dataset
                 for i in range(self.BATCH_SIZE):
-                    # Only append index. Real Fragment-Text is saved in Dataset (don't reload bc. of shuffle)
+                    # [batch index, index inside batch]
                     self.fragments.append([idx, i])
-                    #self.fragments.append(cropped_input_ids[i, ::].unsqueeze(0))
 
-                #Update Progress-Bar and stop progress, if amount of batches reached
                 pbar.update(1)
                 if idx == num_batches - 1:
                     break
 
-        #self.dict_vecs is set in the Forward Hook of the Model. This Hook is set up in the Constructor of this class
-        #Concatenate all Dict-Vec-Batches to a single large list
+        # self.dict_vecs is set in the Forward Hook of the Model (Setup in function setup_sae_hook)
+        # Concatenate all Dict-Vec-Batches to a single large list
         acts = torch.cat(self.dict_vecs, dim=0).detach().cpu().to(torch.float16)
 
-        #Rescale Dict-Feature-Activations 'acts' to range 0 - 10
+        # Rescale Dict-Feature-Activations 'acts' to range 0 - 10
         self.mins = torch.min(torch.min(acts, dim=1).values, dim=0).values
         minus_min = acts - self.mins
         self.maxs = torch.max(torch.max(minus_min, dim=1).values, dim=0).values
         div_by_max = torch.div(minus_min, self.maxs)
         self.rescaled = 10 * torch.where(div_by_max.isnan(), 0, div_by_max)
 
-        #Calculate the mean activation of a feature for each text fragment
-        #ToDo: self.rescaled has shape [num_text_fragments, num_tokens, size_of_dict_vec]
-        #If 10 Batches with Batch Size 8, 64 Tokens per Text Fragment and 5000 Features have log-Frequency in boundaries,
-        #then the shape of self.rescaled is [10 * 8, 64, 5000]
+        # Calculate the mean activation of a feature for each text fragment
+        # If 10 Batches with Batch Size 8, 64 Tokens per Text Fragment and 5000 Features have Frequency in boundaries,
+        # then the shape of self.rescaled is [10 * 8, 64, 5000]
         self.mean_feature_activations = torch.mean(self.rescaled, dim=1)
-
 
     @utils.ModelNeededDecorators.PARAMETER_NEEDED("rescaled")
     def save_interpretation_samples(self, path):
@@ -254,13 +238,18 @@ class AutoInterpreter:
         :return: The Text Fragment on which the given feature_index activates strongly
         """
 
-        #Compute the fragments on which the given Neuron activates the most
-        feature_activations = self.mean_feature_activations[::, feature_index]  #Feature Activations on all Text Fragments
-        top_fragment_ids = feature_activations.topk(i_top_fragments + 1, largest=True).indices  #Compute top-k most activating Text Fragments
-        tf_id = top_fragment_ids[i_top_fragments]   #Text-Fragment-ID, representing the position of the Text Fragment in self.fragments
+        # Compute the fragments on which the given Neuron activates the most
 
-        #Return procedure
+        # Feature Activations on all Text Fragments
+        feature_activations = self.mean_feature_activations[::, feature_index]
+        # Compute top-k most activating Text Fragments
+        top_fragment_ids = feature_activations.topk(i_top_fragments + 1, largest=True).indices
+        # Text-Fragment-ID, representing the position of the Text Fragment in self.fragments
+        tf_id = top_fragment_ids[i_top_fragments]
+
+        # Return procedure
         fragment_idx = self.fragments[tf_id]
+        # [batch index, index inside batch]
         fragment = self.ds[self.BATCH_SIZE * fragment_idx[0] + fragment_idx[1]]
 
         if return_activations:
@@ -360,11 +349,7 @@ class AutoInterpreter:
         system_prompt = self.interpretation_config.prompt_builder.get_simulation_system_prompt()
         raw_simulation = self.interpretation_model.generate_instructive(system_prompt, user_prompt, max_new_tokens=1000)
 
-        simulation = (raw_simulation.split("[/INST]")[-1]
-                      .replace('</s>', '')
-                      .replace('<s>', '')
-                      .replace('[/INST]', '')
-                      .replace('[INST]', ''))
+        simulation = self.interpretation_config.prompt_builder.extract_llm_output(raw_simulation)
 
         kv_dict = {}
 
@@ -397,7 +382,7 @@ class AutoInterpreter:
                     continue
 
                 # Replace unwanted Characters in the Token
-                token = apply_dict_replacement(token, self.interpretation_config.token_replacement_chars)
+                token = apply_dict_replacement(token, self.interpretation_config.prompt_builder.token_replacements)
 
                 kv_dict[token] = int(score)
 
@@ -408,8 +393,13 @@ class AutoInterpreter:
         maximum = max(kv_dict.values())
         minimum = min(kv_dict.values())
 
-        # ToDo: Division by Zero exception possible
-        kv_dict_rescaled = {key: (10 / (maximum - minimum)) * (kv_dict[key] - minimum) for key in kv_dict}
+        # Transform Simulated Scores from Range [minimum, maximum] to [0, maximum - minimum] and rescale to [0, 10]
+        # If maximum == minimum, all scores will be zero
+        if maximum == minimum:
+            scaling_factor = 1
+        else:
+            scaling_factor = 10 / (maximum - minimum)
+        kv_dict_rescaled = {key: scaling_factor * (kv_dict[key] - minimum) for key in kv_dict}
 
         if raw:
             return kv_dict_rescaled, raw_simulation
@@ -437,7 +427,7 @@ class AutoInterpreter:
             value = int(rescaled_per_token_feature_acts[i])
 
             # Replace unwanted Characters in the Token
-            key = apply_dict_replacement(key, self.interpretation_config.token_replacement_chars)
+            key = apply_dict_replacement(key, self.interpretation_config.prompt_builder.token_replacements)
 
             kv_dict[key] = value
 
