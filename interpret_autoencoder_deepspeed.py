@@ -103,7 +103,15 @@ SSL_CERT_PATH = args.ssl_cert
 LOCAL_RANK = args.local_rank
 
 # ElasticSearch info
-INDEX_NAME = AUTOENCODER_PATH.replace("/", "")
+with open(AUTOENCODER_PATH, "rb") as f:
+    autoencoder_config = pickle.load(f)
+
+INDEX_NAME = (f'{autoencoder_config["MODEL_TYPE"]}_{autoencoder_config["LAYER_TYPE"]}_'
+              f'{autoencoder_config["LAYER_INDEX"]}_{autoencoder_config["ACT_VEC_SIZE"]}_'
+              f'{autoencoder_config["DICT_VEC_SIZE"]}_{autoencoder_config["LEARNING_RATE"]}_'
+              f'{autoencoder_config["L1_COEFFICIENT"]}').lower()
+
+# INDEX_NAME = "test"
 
 SERVER_ADDRESS = args.server_address
 API_KEY = args.api_key
@@ -117,7 +125,10 @@ interpretation_config = InterpretationConfig(
     "",
     INTERPRETATION_MODEL_NAME,
     "",
-    CodeLlamaPromptGenerator()
+    CodeLlamaPromptGenerator(),
+    "model.layers.{}.mlp",
+    "model.layers.{}.self_attn",
+    "model.layers.{}.mlp.act_fn"
 )
 
 interpreter = AutoInterpreter(interpretation_config)
@@ -136,16 +147,19 @@ if LOCAL_RANK == 0:
 NUM_INTERPRETABLE_FEATURES = len(interpreter.interpretable_neuron_indices)
 progress_bar = tqdm(desc="Interpretation", total=NUM_INTERPRETABLE_FEATURES)
 
-for idx, feature_index in enumerate(interpreter.interpretable_neuron_indices):
+for idx, item in enumerate(interpreter.interpretable_neuron_indices):
+    interp_neuron_index = idx
+    feature_index = item.item()
+
     # Interpretation
-    user_prompt_interpretation = interpreter.generate_interpretation_prompt(feature_index, NUM_INTERPRETATION_SAMPLES)
+    user_prompt_interpretation = interpreter.generate_interpretation_prompt(interp_neuron_index, NUM_INTERPRETATION_SAMPLES)
     interpretation = interpreter.get_explanation(user_prompt_interpretation)
 
     # Simulation
-    user_prompt_simulation = interpreter.generate_simulation_prompt(feature_index, NUM_SIMULATION_SAMPLES, interpretation)
+    user_prompt_simulation = interpreter.generate_simulation_prompt(interp_neuron_index, NUM_SIMULATION_SAMPLES, interpretation)
 
     scores_simulated = interpreter.get_simulation(user_prompt_simulation)
-    scores_gt = interpreter.generate_ground_truth_scores(feature_index, NUM_SIMULATION_SAMPLES)
+    scores_gt = interpreter.generate_ground_truth_scores(interp_neuron_index, NUM_SIMULATION_SAMPLES)
 
     correlation_score = calculate_correlation_from_kv_dict(scores_gt, scores_simulated)
 

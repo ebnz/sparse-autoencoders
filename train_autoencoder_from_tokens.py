@@ -245,11 +245,11 @@ def hook_mlp_acts(module, input, output):
     raw_activation_vecs.append(output.detach().cpu())
 
 if LAYER_TYPE == "mlp_sublayer":
-    target_model.setup_hook(hook_mlp, LAYER_INDEX, LAYER_TYPE)
+    target_model.setup_hook(hook_mlp, f"model.layers.{LAYER_INDEX}.mlp")
 elif LAYER_TYPE == "attn_sublayer":
-    target_model.setup_hook(hook_attn, LAYER_INDEX, LAYER_TYPE)
+    target_model.setup_hook(hook_mlp, f"model.layers.{LAYER_INDEX}.self_attn")
 elif LAYER_TYPE == "mlp_activations":
-    target_model.setup_hook(hook_mlp_acts, LAYER_INDEX, LAYER_TYPE)
+    target_model.setup_hook(hook_mlp, f"model.layers.{LAYER_INDEX}.mlp.act_fn")
 else:
     raise AttributeError("Unrecognized Type of layer_type")
 

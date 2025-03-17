@@ -1,7 +1,13 @@
+import torch
 from dataclasses import dataclass
 
-from sparse_autoencoders.AutoInterpretation.TokenScoreRegexFilter import *
-from sparse_autoencoders.AutoInterpretation.PromptGenerator import PromptGeneratorBase
+import sparse_autoencoders
+
+from .PromptGenerator import PromptGeneratorBase
+from .TokenScoreRegexFilter import TokenScoreRegexFilter, TokenScoreRegexFilterAverage
+
+# from sparse_autoencoders.AutoInterpretation.TokenScoreRegexFilter import TokenScoreRegexFilter
+# from sparse_autoencoders.AutoInterpretation.PromptGenerator import PromptGeneratorBase
 
 """
 Dataclasses for Interpretation
@@ -17,6 +23,46 @@ class InterpretationConfig:
     autoencoder_path: str
 
     prompt_builder: PromptGeneratorBase
+
+    mlp_sublayer_module_name: str
+    attn_sublayer_module_name: str
+    mlp_activations_module_name: str
+
+    @staticmethod
+    def get_mlp_hook(autoencoder, autoencoder_device, interpretable_neuron_indices, dict_vecs=None):
+        def mlp_hook(module, input, output):
+            activations = output.detach().cpu()
+            X_hat, f = autoencoder(activations.to(autoencoder_device, torch.float32))
+            if dict_vecs is not None:
+                # Only select the Features with log-Frequency between boundaries set in obtain_interpretation_samples
+                dict_vec = f.detach().cpu()[::, ::, interpretable_neuron_indices]
+                dict_vecs.append(dict_vec)
+
+        return mlp_hook
+
+    @staticmethod
+    def get_attn_hook(autoencoder, autoencoder_device, interpretable_neuron_indices, dict_vecs=None):
+        def attn_hook(module, input, output):
+            activations = output[0].detach().cpu()
+            X_hat, f = autoencoder(activations.to(autoencoder_device, torch.float32))
+            if dict_vecs is not None:
+                # Only select the Features with log-Frequency between boundaries set in obtain_interpretation_samples
+                dict_vec = f.detach().cpu()[::, ::, interpretable_neuron_indices]
+                dict_vecs.append(dict_vec)
+
+        return attn_hook
+
+    @staticmethod
+    def get_mlp_acts_hook(autoencoder, autoencoder_device, interpretable_neuron_indices, dict_vecs=None):
+        def mlp_acts_hook(model, input, output):
+            activations = output.detach().cpu()
+            X_hat, f = autoencoder(activations.to(autoencoder_device, torch.float32))
+            if dict_vecs is not None:
+                # Only select the Features with log-Frequency between boundaries set in obtain_interpretation_samples
+                dict_vec = f.detach().cpu()[::, ::, interpretable_neuron_indices]
+                dict_vecs.append(dict_vec)
+
+        return mlp_acts_hook
 
     # Hierarchy:
     # * "for": 8 (high activation value, as it is a keyword that the neuron is looking for)

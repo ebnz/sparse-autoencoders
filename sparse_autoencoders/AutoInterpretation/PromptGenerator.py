@@ -73,14 +73,14 @@ class CodeLlamaPromptGenerator(PromptGeneratorBase):
             activations = activations.tolist()
 
         # Map activations to int
-        activations = map(int, activations)
+        activations = list(map(int, activations))
 
         # List all complete Text-Fragments
         user_prompt = "Neuron: \n"
-        user_prompt += "The complete documents: \n\n"
+        #user_prompt += "The complete documents: \n\n"
 
-        for text in complete_texts:
-            user_prompt += f"{text}\n\n"
+        #for text in complete_texts:
+        #    user_prompt += f"{text}\n\n"
 
         # List all Tokens with Activations
         user_prompt += "Activations: \n"
@@ -96,7 +96,7 @@ class CodeLlamaPromptGenerator(PromptGeneratorBase):
         user_prompt += "<start>\n"
 
         for token, activation in zip(tokens, activations):
-            if activation != 0:
+            if activation > 0:
                 user_prompt += f"* {token} \x09 {activation} \n"
 
         user_prompt += "<end>\n"

@@ -76,7 +76,10 @@ interpretation_config = InterpretationConfig(
     TARGET_MODEL_NAME,
     "",
     AUTOENCODER_PATH,
-    CodeLlamaPromptGenerator()
+    CodeLlamaPromptGenerator(),
+    "model.layers.{}.mlp",
+    "model.layers.{}.self_attn",
+    "model.layers.{}.mlp.act_fn"
 )
 
 interpreter = AutoInterpreter(interpretation_config)

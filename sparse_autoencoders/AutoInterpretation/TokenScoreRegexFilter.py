@@ -84,8 +84,11 @@ class TokenScoreRegexFilterAverage(TokenScoreRegexFilter):
             try:
                 score_val = int(score)
                 score_sum += score_val
+            except ValueError:
+                print(f"WARN: <{score}> can't be casted to int. Value can't be casted")
+                continue
             except TypeError:
-                print(f"WARN: <{score}> can't be casted to int")
+                print(f"WARN: <{score}> can't be casted to int. Type can't be casted")
                 continue
 
         return score_sum / len(score_range.split("-"))

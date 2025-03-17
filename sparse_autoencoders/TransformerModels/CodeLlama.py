@@ -43,29 +43,6 @@ class CodeLlamaModel(TransformerModelWrapper):
 
         return layer_output
 
-    def setup_hook(self, hook, layer_id, layer_type, permanent=False):
-        if layer_id is not None and (layer_id < 0 or layer_id >= len(self.model.model.layers)):
-            raise Exception("layer_id not found")
-
-        if layer_type == "attn_sublayer":
-            handle = self.model.model.layers[layer_id].self_attn.register_forward_hook(hook)
-        elif layer_type == "mlp_sublayer":
-            handle = self.model.model.layers[layer_id].mlp.register_forward_hook(hook)
-        elif layer_type == "mlp_activations":
-            handle = self.model.model.layers[layer_id].mlp.act_fn.register_forward_hook(hook)
-        else:
-            try:
-                # Recursively get Attributes
-                # ToDo: ugly as hell, tidy up
-                attribute = self.model.model.layers[layer_id] if layer_id is not None else self.model.model
-                for attribute_name in layer_type.split("."):
-                    attribute = getattr(attribute, attribute_name)
-                handle = attribute.register_forward_hook(hook)
-            except AttributeError:
-                raise AttributeError(f"Unrecognized Type of layer_type: <{attribute_name}> in attribute <{attribute}>")
-        if not permanent:
-            self.model_hook_handles.append(handle)
-
 
 class CodeLlamaModelDeepspeed(CodeLlamaModel):
     def __init__(self, model, num_gpus, tokenizer=None):

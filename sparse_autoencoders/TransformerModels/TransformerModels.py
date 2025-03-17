@@ -43,10 +43,12 @@ class TransformerModelWrapper:
         # Tokenize input string and send to device on which the model is located (e.g. cuda)
         inputs = self.tokenizer(prompt, return_tensors="pt", add_special_tokens=add_special_tokens)
         input_ids_cuda = inputs["input_ids"].to(self.device)
+        attention_mask_cuda = inputs["attention_mask"].to(self.device)
 
         # Generate output with LLM model
         output = self.model.generate(
             input_ids_cuda,
+            attention_mask=attention_mask_cuda,
             max_new_tokens=max_new_tokens,
             do_sample=True,
             top_p=top_p,
@@ -64,8 +66,21 @@ class TransformerModelWrapper:
     def run_model_until_layer(self, input_ids, stop_layer):
         raise NotImplementedError("This Class is an interface")
 
-    def setup_hook(self, hook, layer_id, layer_type):
-        raise NotImplementedError("This class is an interface")
+    def setup_hook(self, hook, module_name, permanent=False):
+        modules_dict = dict(self.model.named_modules())
+
+        # Retrieve Module from Name and register Hook
+        try:
+            module = modules_dict[module_name]
+        except KeyError:
+            raise ValueError(f"Module: <{module_name}> does not exist in Model <{self.model}> "
+                             f"and is not registered in layer_aliases of TransformerModelWrapper")
+
+        handle = module.register_forward_hook(hook)
+
+        # Permanent Hooks can't be removed
+        if not permanent:
+            self.model_hook_handles.append(handle)
 
     def clear_hooks(self):
         for hook in self.model_hook_handles:

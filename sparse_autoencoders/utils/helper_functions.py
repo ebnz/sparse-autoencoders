@@ -1,4 +1,5 @@
 import torch
+from numpy import isnan
 from itertools import product
 
 """
@@ -17,10 +18,13 @@ def calculate_correlation_from_kv_dict(kv_dict_gt, kv_dict_simulated):
         if key_gt == key_simulated:
             datapoints.append([kv_dict_gt[key_gt], kv_dict_simulated[key_simulated]])
 
+    if len(datapoints) == 0:
+        return 0
+
     datapoints_tensor = torch.Tensor(datapoints).T
     corr_mat = torch.corrcoef(datapoints_tensor)
 
-    return float(corr_mat[0, 1])
+    return float(corr_mat[0, 1]) if not isnan(float(corr_mat[0, 1])) else 0
 
 
 """
