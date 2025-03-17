@@ -115,38 +115,38 @@ if NUM_FILES % NUM_PROCESSES != 0:
 if not os.path.isdir(PATH):
     os.mkdir(PATH)
 
-#Technically also checks, since Errors are raised when strings/names are invalid
+# Technically also checks, since Errors are raised when strings/names are invalid
 tokenizer = CodeLlamaTokenizer.from_pretrained(tokenizer_name)
 d = HFDatasetIterator(dataset_name)
 
 
 def task(id, num_files_per_process):
-    #Save all tokenized Contexts of one File in this list
+    # Save all tokenized Contexts of one File in this list
     tokenized = []
 
-    #Generate num_files_per_process Files
+    # Generate num_files_per_process Files
     for i_file in range(num_files_per_process):
         print(f"Process: {id} /// File: {i_file} of {num_files_per_process}")
 
-        #Load NUM_SAMPLES_PER_FILE Contexts from HuggingFace Dataset
+        # Load NUM_SAMPLES_PER_FILE Contexts from HuggingFace Dataset
         while len(tokenized) < NUM_SAMPLES_PER_FILE:
-            #Load a single Context from HuggingFace Dataset
+            # Load a single Context from HuggingFace Dataset
             item = next(d)
             tokens = tokenizer(item["content"], return_tensors="pt", truncation=True, max_length=MIN_TOKENS, add_special_tokens=False)
 
-            #If loaded Context from HuggingFace Dataset is too short, reload a new one
+            # If loaded Context from HuggingFace Dataset is too short, reload a new one
             while len(tokens["input_ids"][0]) < MIN_TOKENS:
                 item = next(d)
                 tokens = tokenizer(item["content"], return_tensors="pt", truncation=True, max_length=MIN_TOKENS, add_special_tokens=False)
 
-            #Append tokenized Context to list
+            # Append tokenized Context to list
             tokenized.append(tokens["input_ids"])
 
-            #Give Progress update each time 10% of progress are completed
-            if(len(tokenized) % (NUM_SAMPLES_PER_FILE / 10) == 0):
+            # Give Progress update each time 10% of progress are completed
+            if (len(tokenized) % (NUM_SAMPLES_PER_FILE / 10)) == 0:
                 print(f"Process: {id} /// {len(tokenized)} of {NUM_SAMPLES_PER_FILE}")
 
-        #Concatenate List, save List and empty list for next File
+        # Concatenate List, save List and empty list for next File
         tensor = torch.cat(tokenized)
         torch.save(tensor, os.path.join(PATH, f"fragment_{id}_{i_file}.pt"))
         tokenized = []

@@ -15,13 +15,6 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--autoencoder_path",
-    default="./autoencoder.pt",
-    type=str,
-    help="Path of Autoencoder Model to analyze"
-)
-
-parser.add_argument(
     "--interpretation_samples_path",
     default="./interpretation_samples.pt",
     type=str,
@@ -88,7 +81,6 @@ Parse Arguments
 args = parser.parse_args()
 
 DATASET_PATH = args.dataset_path
-AUTOENCODER_PATH = args.autoencoder_path
 INTERPRETATION_SAMPLES_PATH = args.interpretation_samples_path
 
 INTERPRETATION_MODEL_NAME = args.interpretation_model_name
@@ -102,17 +94,6 @@ SSL_CERT_PATH = args.ssl_cert
 
 LOCAL_RANK = args.local_rank
 
-# ElasticSearch info
-with open(AUTOENCODER_PATH, "rb") as f:
-    autoencoder_config = pickle.load(f)
-
-INDEX_NAME = (f'{autoencoder_config["MODEL_TYPE"]}_{autoencoder_config["LAYER_TYPE"]}_'
-              f'{autoencoder_config["LAYER_INDEX"]}_{autoencoder_config["ACT_VEC_SIZE"]}_'
-              f'{autoencoder_config["DICT_VEC_SIZE"]}_{autoencoder_config["LEARNING_RATE"]}_'
-              f'{autoencoder_config["L1_COEFFICIENT"]}').lower()
-
-# INDEX_NAME = "test"
-
 SERVER_ADDRESS = args.server_address
 API_KEY = args.api_key
 
@@ -120,7 +101,7 @@ API_KEY = args.api_key
 Interpretation
 """
 
-interpretation_config = InterpretationConfig(
+interpretation_config = CodeLlamaInterpretationConfig(
     DATASET_PATH,
     "",
     INTERPRETATION_MODEL_NAME,
@@ -135,6 +116,12 @@ interpreter = AutoInterpreter(interpretation_config)
 interpreter.load_dataset()
 interpreter.load_interpretation_model_deepspeed(NUM_GPUS)
 interpreter.load_interpretation_samples(INTERPRETATION_SAMPLES_PATH)
+
+# ElasticSearch Index-Name
+INDEX_NAME = (f'{interpreter.autoencoder_config["MODEL_TYPE"]}_{interpreter.autoencoder_config["LAYER_TYPE"]}_'
+              f'{interpreter.autoencoder_config["LAYER_INDEX"]}_{interpreter.autoencoder_config["ACT_VEC_SIZE"]}_'
+              f'{interpreter.autoencoder_config["DICT_VEC_SIZE"]}_{interpreter.autoencoder_config["LEARNING_RATE"]}_'
+              f'{interpreter.autoencoder_config["L1_COEFFICIENT"]}').lower()
 
 if LOCAL_RANK == 0:
     # Open ElasticSearch-Connection

@@ -71,7 +71,7 @@ AUTOENCODER_DEVICE = args.autoencoder_device
 Obtain Interpretation Samples
 """
 
-interpretation_config = InterpretationConfig(
+interpretation_config = CodeLlamaInterpretationConfig(
     DATASET_PATH,
     TARGET_MODEL_NAME,
     "",

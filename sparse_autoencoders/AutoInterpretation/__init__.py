@@ -1,4 +1,4 @@
 from .AutoInterpretation import *
-from .Dataclasses import *
+from .InterpretationConfig import *
 from .TokenScoreRegexFilter import *
 from .PromptGenerator import *

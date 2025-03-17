@@ -151,6 +151,27 @@ parser.add_argument(
          "(with n being input dimension of AutoEncoder)"
 )
 
+parser.add_argument(
+    "--mlp_activations_hookpoint",
+    type=str,
+    default="model.layers.{}.mlp.act_fn",
+    help="Hookpoint description for MLP-Activations. e.g. model.layers.{}.mlp.act_fn ({} for Layer Index)"
+)
+
+parser.add_argument(
+    "--mlp_sublayer_hookpoint",
+    type=str,
+    default="model.layers.{}.mlp",
+    help="Hookpoint description for MLP-Sublayer. e.g. model.layers.{}.mlp ({} for Layer Index)"
+)
+
+parser.add_argument(
+    "--attn_sublayer_hookpoint",
+    type=str,
+    default="model.layers.{}.self_attn",
+    help="Hookpoint description for Attention-Sublayer. e.g. model.layers.{}.self_attn ({} for Layer Index)"
+)
+
 """
 Parse Arguments
 """
@@ -188,6 +209,10 @@ NEURON_RESAMPLING_METHOD = args.neuron_resampling_method
 NEURON_RESAMPLING_INTERVAL = args.neuron_resampling_interval
 
 NORMALIZE_DATASET = args.normalize_dataset
+
+MLP_ACTIVATIONS_HOOKPOINT = args.mlp_activations_hookpoint
+MLP_SUBLAYER_HOOKPOINT = args.mlp_sublayer_hookpoint
+ATTN_SUBLAYER_HOOKPOINT = args.attn_sublayer_hookpoint
 
 """
 Checks for Arguments
@@ -245,11 +270,11 @@ def hook_mlp_acts(module, input, output):
     raw_activation_vecs.append(output.detach().cpu())
 
 if LAYER_TYPE == "mlp_sublayer":
-    target_model.setup_hook(hook_mlp, f"model.layers.{LAYER_INDEX}.mlp")
+    target_model.setup_hook(hook_mlp, MLP_SUBLAYER_HOOKPOINT.format(LAYER_INDEX))
 elif LAYER_TYPE == "attn_sublayer":
-    target_model.setup_hook(hook_mlp, f"model.layers.{LAYER_INDEX}.self_attn")
+    target_model.setup_hook(hook_mlp, ATTN_SUBLAYER_HOOKPOINT.format(LAYER_INDEX))
 elif LAYER_TYPE == "mlp_activations":
-    target_model.setup_hook(hook_mlp, f"model.layers.{LAYER_INDEX}.mlp.act_fn")
+    target_model.setup_hook(hook_mlp, MLP_ACTIVATIONS_HOOKPOINT.format(LAYER_INDEX))
 else:
     raise AttributeError("Unrecognized Type of layer_type")
 

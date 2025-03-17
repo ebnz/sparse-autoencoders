@@ -13,7 +13,8 @@ class PromptGeneratorBase:
         # Replacements to be done on LLM-Outputs (e.g. "</s>" -> "")
         self.output_replacements = {}
 
-    def get_interpretation_prompt(self, complete_texts, tokens, activations):
+    def get_interpretation_prompt(self, complete_texts, tokens, activations,
+                                  include_complete_texts=True, include_filtered_tokens=True):
         raise NotImplementedError("Class PromptGeneratorBase is an Interface")
 
     def get_interpretation_system_prompt(self):
@@ -26,6 +27,9 @@ class PromptGeneratorBase:
         return self.simulation_system_prompt
 
     def extract_llm_output(self, raw_output):
+        raise NotImplementedError("Class PromptGeneratorBase is an Interface")
+
+    def replace_special_tokens(self, raw_output):
         raise NotImplementedError("Class PromptGeneratorBase is an Interface")
 
 
@@ -64,7 +68,8 @@ class CodeLlamaPromptGenerator(PromptGeneratorBase):
             "[INST]": ""
         }
 
-    def get_interpretation_prompt(self, complete_texts, tokens, activations):
+    def get_interpretation_prompt(self, complete_texts, tokens, activations,
+                                  include_complete_texts=True, include_filtered_tokens=True):
         # Cast to Python-List if needed
         if isinstance(tokens, torch.Tensor):
             tokens = tokens.tolist()
@@ -77,10 +82,10 @@ class CodeLlamaPromptGenerator(PromptGeneratorBase):
 
         # List all complete Text-Fragments
         user_prompt = "Neuron: \n"
-        #user_prompt += "The complete documents: \n\n"
+        user_prompt += "The complete documents: \n\n"
 
-        #for text in complete_texts:
-        #    user_prompt += f"{text}\n\n"
+        for text in complete_texts:
+            user_prompt += f"{text}\n\n"
 
         # List all Tokens with Activations
         user_prompt += "Activations: \n"
@@ -149,5 +154,8 @@ Activations:
         return user_prompt
 
     def extract_llm_output(self, raw_output):
-        generated_text = raw_output.split("[/INST]")[-1]
-        return apply_dict_replacement(generated_text, self.output_replacements)
+        generated_text = raw_output.split("[/INST]")[-1].strip()
+        return self.replace_special_tokens(generated_text)
+
+    def replace_special_tokens(self, raw_output):
+        return apply_dict_replacement(raw_output, self.output_replacements)
