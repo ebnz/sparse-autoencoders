@@ -1,9 +1,13 @@
 import torch
-
 from sparse_autoencoders.utils import apply_dict_replacement
+
 
 class PromptGeneratorBase:
     def __init__(self):
+        """
+        An interface, that handles Generation of Interpretation/Simulation Prompts for AutoInterpretation.
+        May be defined for each Language Model individually.
+        """
         self.interpretation_system_prompt = ""
         self.simulation_system_prompt = ""
 
@@ -15,26 +19,74 @@ class PromptGeneratorBase:
 
     def get_interpretation_prompt(self, complete_texts, tokens, activations,
                                   include_complete_texts=True, include_filtered_tokens=True):
+        """
+        Generates the Interpretation Prompt to infer an explanation of the Token Activations.
+        :rtype: str
+        :type complete_texts: list[str]
+        :type tokens: list[str]
+        :type activations: list[int]
+        :param complete_texts: Complete documents for the Interpretation Prompt
+        :param tokens: Tokens for the Interpretation Prompt
+        :param activations: Activations to the Tokens for the Interpretation Prompt
+        :param include_complete_texts: Whether to include the complete texts into the Interpretation Prompt
+        :param include_filtered_tokens: Whether to include a section of all non-zero activating Tokens into the Prompt
+        """
         raise NotImplementedError("Class PromptGeneratorBase is an Interface")
 
     def get_interpretation_system_prompt(self):
+        """
+        Returns the System Prompt for Interpretation.
+        :rtype: str
+        :return: System Prompt
+        """
         return self.interpretation_system_prompt
 
     def get_simulation_prompt(self, tokens, explanation):
+        """
+        Generates the Simulation Prompt for Simulation of a Neuron.
+        :rtype: str
+        :type tokens: list[str]
+        :type explanation: str
+        :param tokens: Tokens for the Simulation Prompt
+        :param explanation: Explanation, generated in the Interpretation-Process
+        """
         raise NotImplementedError("Class PromptGeneratorBase is an Interface")
 
     def get_simulation_system_prompt(self):
+        """
+        Returns the System Prompt for a Simulation.
+        :rtype: str
+        :return: System Prompt
+        """
         return self.simulation_system_prompt
 
     def extract_llm_output(self, raw_output):
+        """
+        Extracts the newly generated part from a LLM-Output. Separates the newly generated output from a LLM from the
+        Union of Prompt and newly generated output.
+        :rtype: str
+        :type raw_output: str
+        :param raw_output: Newly generated part of the LLM-Output
+        :return: Newly generated LLM Output
+        """
         raise NotImplementedError("Class PromptGeneratorBase is an Interface")
 
     def replace_special_tokens(self, raw_output):
+        """
+        Removes the Special Tokens from a String.
+        :rtype: str
+        :type raw_output: str
+        :param raw_output: Input, on which the special Tokens are removed
+        :return: Parameter raw_output, where special tokens are removed
+        """
         raise NotImplementedError("Class PromptGeneratorBase is an Interface")
 
 
 class CodeLlamaPromptGenerator(PromptGeneratorBase):
     def __init__(self):
+        """
+        PromptGenerator-Class, modified for CodeLlama LLMs.
+        """
         super().__init__()
 
         # Prompts from https://openaipublic.blob.core.windows.net/neuron-explainer/paper/index.html

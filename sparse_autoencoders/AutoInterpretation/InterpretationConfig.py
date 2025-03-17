@@ -1,7 +1,7 @@
 import torch
 from dataclasses import dataclass
 
-from .PromptGenerator import PromptGeneratorBase
+from .PromptGenerator import PromptGeneratorBase, CodeLlamaPromptGenerator
 from .TokenScoreRegexFilter import TokenScoreRegexFilter, TokenScoreRegexFilterAverage
 
 """
@@ -9,24 +9,28 @@ Dataclasses for Interpretation
 """
 @dataclass
 class InterpretationConfigBase:
+    """
+    Configuration for AutoInterpreter
+    :param dataset_path: The Prompt for the LLM
+    :param target_model_name: HuggingFace-Name of the Target-LLM
+    :param interpretation_model_name: HuggingFace-Name of the Interpretation-LLM
+    :param autoencoder_path: Path to AutoEncoder
+    """
     dataset_path: str
-
     target_model_name: str
-
     interpretation_model_name: str
-
     autoencoder_path: str
 
-    prompt_generator: PromptGeneratorBase
+    prompt_generator = PromptGeneratorBase()
     include_complete_texts = True
     include_filtered_tokens = True
 
     """
     Define Hookpoints in Transformer-Model. e.g. model.layers.{}.mlp ({} for Layer Index)
     """
-    mlp_sublayer_module_name: str
-    attn_sublayer_module_name: str
-    mlp_activations_module_name: str
+    mlp_sublayer_module_name = ""
+    attn_sublayer_module_name = ""
+    mlp_activations_module_name = ""
 
     """
     Functions get_mlp_hook, get_attn_hook, get_mlp_acts_hook return a Hook-Function, which takes all Activations, 
@@ -60,8 +64,14 @@ CodeLlama Interpretation Config
 """
 @dataclass
 class CodeLlamaInterpretationConfig(InterpretationConfigBase):
+    prompt_generator = CodeLlamaPromptGenerator()
     include_complete_texts = False
     include_filtered_tokens = True
+
+    mlp_sublayer_module_name = "model.layers.{}.mlp"
+    attn_sublayer_module_name = "model.layers.{}.self_attn"
+    mlp_activations_module_name = "model.layers.{}.mlp.act_fn"
+
     @staticmethod
     def get_mlp_hook(autoencoder, autoencoder_device, interpretable_neuron_indices, dict_vecs=None):
         def mlp_hook(module, input, output):
