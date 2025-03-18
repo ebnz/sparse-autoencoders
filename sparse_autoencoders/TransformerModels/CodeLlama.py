@@ -26,12 +26,6 @@ class CodeLlamaModel(TransformerModelWrapper):
                                        add_special_tokens=add_special_tokens)
 
     def run_model_until_layer(self, input_ids, stop_layer):
-        """
-        Run the Model and stop after the layer_output-th Layer.
-        :param input_ids: Input IDs on which the Target Model should be run
-        :param stop_layer: Layer at which the Model-Run is stopped
-        :return: Output Activations of the layer_output-th Layer
-        """
         # Embed Tokens and generate position_ids for the Layers. The API does not accept position_ids=None at the moment
         layer_output = self.model.model.embed_tokens(input_ids.to(self.device))
         position_ids = torch.tensor([[i for i in range(input_ids.shape[1])]])

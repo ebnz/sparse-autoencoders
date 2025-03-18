@@ -6,6 +6,13 @@ from sparse_autoencoders.AutoEncoder import AutoEncoderUtils
 
 class AutoEncoderBase(torch.nn.Module):
     def __init__(self, n, m):
+        """
+        Base-Class of an Autoencoder.
+        :type n: int
+        :type m: int
+        :param n: Activation-Vector Size
+        :param m: Dictionary-Vector Size
+        """
         super().__init__()
 
         self.n = n
@@ -38,12 +45,31 @@ class AutoEncoderBase(torch.nn.Module):
         self.sparsity_losses = []
 
     def forward_encoder(self, x):
+        """
+        Forward-Pass of the Encoder of the Model.
+        :type x: torch.Tensor
+        :param x: Input of the Encoder
+        :rtype: torch.Tensor
+        """
         raise NotImplementedError("AutoEncoderBase is an interface!")
 
     def forward_decoder(self, x):
+        """
+        Forward-Pass of the Decoder of the Model.
+        :type x: torch.Tensor
+        :param x: Input of the Decoder
+        :rtype: torch.Tensor
+        """
         raise NotImplementedError("AutoEncoderBase is an interface!")
 
     def forward(self, x):
+        """
+        Forward-Pass of the Autoencoder.
+        :type x: torch.Tensor
+        :param x: Input of the Model
+        :rtype: (torch.Tensor, torch.Tensor)
+        :return: Output of the Model and Dictionary-Vector
+        """
         if not self.training:
             f = self.forward_encoder(x)
             x_hat = self.forward_decoder(f)
@@ -63,8 +89,8 @@ class AutoEncoderBase(torch.nn.Module):
             pass
         elif self.neuron_resampling_method == "replacement":
             self.neuron_resampling_by_replacement(f)
-        elif self.neuron_resampling_method == "anthropic":
-            self.neuron_replacement_by_anthropic(f)
+        else:
+            print("WARN: Neuron-Resampling Method not recognized")
 
         return x_hat, f
 
@@ -72,6 +98,19 @@ class AutoEncoderBase(torch.nn.Module):
     Loss Methods
     """
     def loss(self, x, x_hat, f, l1=1):
+        """
+        Loss-Function of the Model.
+        :type x: torch.Tensor
+        :type x_hat: torch.Tensor
+        :type f: torch.Tensor
+        :type l1: float
+        :param x: Ground Truth Model Input
+        :param x_hat: Resembled Model Output
+        :param f: Dictionary-Vector
+        :param l1: L1-Coefficient, Sparsity Penalty Coefficient
+        :rtype: float | torch.Tensor
+        :return: Value of Loss-Function
+        """
         raise NotImplementedError("AutoEncoderBase is an interface!")
 
 
@@ -79,6 +118,14 @@ class AutoEncoderBase(torch.nn.Module):
     Neuron Resampling Methods
     """
     def enable_neuron_resampling(self, neuron_resampling_method=None, neuron_resampling_interval=25_000):
+        """
+        Enables Neuron Resampling for the Training of an Autoencoder.
+        This resets all dead Neuron's Weights in an interval of Training Epochs.
+        :type neuron_resampling_method: str
+        :type neuron_resampling_interval: int
+        :param neuron_resampling_method: Name of the Neuron Resampling Method
+        :param neuron_resampling_interval: Interval of Neuron Resampling
+        """
         self.neuron_resampling_enabled = True
 
         self.neuron_resampling_method = neuron_resampling_method
@@ -86,6 +133,11 @@ class AutoEncoderBase(torch.nn.Module):
         self.summed_f_resampling = torch.zeros(self.m)
 
     def neuron_resampling_by_replacement(self, f):
+        """
+        Implementation of the Neuron-Resampling Method 'replacement'.
+        :type f: torch.Tensor
+        :param f: Dictionary-Vector
+        """
         self.summed_f_resampling += torch.sum(f.detach().cpu(), dim=0)
 
         if self.training_runs % self.neuron_resampling_interval == 0:
@@ -109,14 +161,30 @@ class AutoEncoderBase(torch.nn.Module):
             # Reset self.summed_f_resampling
             self.summed_f_resampling = torch.zeros(self.m)
 
-    def neuron_replacement_by_anthropic(self, f):
-        raise NotImplementedError("Not implemented yet")
-
 
     """
     Checkpointing Methods
     """
     def enable_checkpointing(self, learning_rate, l1_coefficient, batch_size, layer_type, layer_index, save_path, image_path, checkpoint_interval=12_500):
+        """
+        Enables Checkpointing of the Model's Training Process.
+        :type learning_rate: float
+        :type l1_coefficient: float
+        :type batch_size: int
+        :type layer_type: str
+        :type layer_index: int
+        :type save_path: str
+        :type image_path: str
+        :type checkpoint_interval: int
+        :param learning_rate: Learning Rate
+        :param l1_coefficient: L1-Coefficient, Sparsity Penalty Coefficient
+        :param batch_size: Batch Size
+        :param layer_type: Name of Hookpoint
+        :param layer_index: Layer-ID
+        :param save_path: Path to save the Model to
+        :param image_path: Path to save the Histogram to
+        :param checkpoint_interval: Interval, in which the Checkpoints should be generated
+        """
         self.checkpointing_enabled = True
 
         self.LEARNING_RATE = learning_rate
@@ -132,6 +200,14 @@ class AutoEncoderBase(torch.nn.Module):
         self.count_f_checkpoint = torch.zeros(self.m)
 
     def calculate_activation_counts(self, log10=True, num_samples=None):
+        """
+        Calculates the Activation Counts (Frequency of Dictionary-Feature Activations).
+        :type log10: bool
+        :type num_samples: int
+        :param log10: Whether to return the Activations in Log10
+        :param num_samples: Number of Samples, used for Activation Count Calculation
+        :return: Activations Counts and Number of dead Neurons
+        """
         if num_samples is None:
             activation_counts = self.count_f_checkpoint / (self.checkpoint_interval * self.BATCH_SIZE)
         else:
@@ -144,6 +220,15 @@ class AutoEncoderBase(torch.nn.Module):
         return activation_counts, no_dead_neurons
 
     def checkpointing(self, x, x_hat, f):
+        """
+        Checkpointing Precedure. Saves a Checkpoint if Interval-Condition is met.
+        :type x: torch.Tensor
+        :type x_hat: torch.Tensor
+        :type f: torch.Tensor
+        :param x: Ground Truth Autoencoder Input
+        :param x_hat: Reconstructed Autoencoder Output
+        :param f: Dictionary-Vector
+        """
         # Shape [Tokens, Activations]
         if len(f.shape) == 2:
             self.summed_f_checkpoint += torch.sum(f.detach().cpu(), dim=0)
@@ -182,6 +267,10 @@ class AutoEncoderBase(torch.nn.Module):
 
 class AutoEncoderAnthropic(AutoEncoderBase):
     def __init__(self, n, m):
+        """
+        Implementation of the Anthropic Autoencoder.
+        Link: https://transformer-circuits.pub/2023/monosemantic-features/index.html#appendix-autoencoder
+        """
         super().__init__(n, m)
 
         self.bias_encoder = torch.nn.Parameter(torch.zeros(m))
@@ -274,7 +363,6 @@ class AutoEncoderAnthropicImproved(AutoEncoderBase):
     """
     Neuron Resampling Methods
     """
-
     def neuron_resampling_by_replacement(self, f):
         self.training_runs += 1
         if self.training_runs % self.neuron_resampling_interval == 0:
@@ -294,14 +382,17 @@ class AutoEncoderAnthropicImproved(AutoEncoderBase):
             # Reset self.summed_f_resampling
             self.summed_f_resampling = torch.zeros(self.m)
 
-    def neuron_replacement_by_anthropic(self, f):
-        raise NotImplementedError("Not implemented yet")
-
 
 """
 Model-Loading
 """
 def load_model_from_config(config_dict):
+    """
+    Loads a Model from its Model-Configuration Dictionary.
+    :type config_dict: dict
+    :param config_dict: Model-Configuration Dictionary
+    :rtype: AutoEncoderBase
+    """
     if config_dict["MODEL_TYPE"] == "AutoEncoderAnthropic":
         autoencoder = AutoEncoderAnthropic(config_dict["ACT_VEC_SIZE"], config_dict["DICT_VEC_SIZE"])
     elif config_dict["MODEL_TYPE"] == "AutoEncoderAnthropicImproved":
