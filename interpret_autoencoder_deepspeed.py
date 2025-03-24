@@ -153,6 +153,12 @@ for idx, item in enumerate(interpreter.interpretable_neuron_indices):
             tokens.append(token)
 
     if LOCAL_RANK == 0:
-        document = {"tokens": tokens, "score": correlation_score, "interpretation": interpretation}
+        document = {
+            "layer": interpreter.autoencoder_config["LAYER_INDEX"],
+            "dim": idx,
+            "tokens": tokens,
+            "score": correlation_score,
+            "interpretation": interpretation
+        }
         client.create(document=document, index=INDEX_NAME, id=feature_index)
         progress_bar.update(1)
