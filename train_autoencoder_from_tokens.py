@@ -287,9 +287,11 @@ Go forth and Transform!
 raw_activation_vecs = []
 
 model = AutoEncoder.AutoEncoderAnthropic(ACT_VEC_SIZE, DICT_VEC_SIZE).to(DEVICE_AE)
-model.enable_neuron_resampling(NEURON_RESAMPLING_METHOD, NEURON_RESAMPLING_INTERVAL)
-model.enable_checkpointing(LEARNING_RATE, L1_COEFFICIENT, BATCH_SIZE_AE, LAYER_TYPE, LAYER_INDEX, SAVE_PATH,
-                           IMAGE_PATH, BATCHES_BETWEEN_CHECKPOINTS)
+if NEURON_RESAMPLING_METHOD != "":
+    model.enable_neuron_resampling(NEURON_RESAMPLING_METHOD, NEURON_RESAMPLING_INTERVAL)
+if BATCHES_BETWEEN_CHECKPOINTS != 0:
+    model.enable_checkpointing(LEARNING_RATE, L1_COEFFICIENT, BATCH_SIZE_AE, LAYER_TYPE, LAYER_INDEX, SAVE_PATH,
+                               IMAGE_PATH, BATCHES_BETWEEN_CHECKPOINTS)
 
 model.train(True)
 
