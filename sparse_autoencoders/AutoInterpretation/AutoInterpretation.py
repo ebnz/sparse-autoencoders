@@ -242,7 +242,7 @@ class AutoInterpreter:
         # Calculate the mean activation of a Feature for each text fragment
         self.mean_feature_activations = torch.mean(self.rescaled_feature_activations, dim=1)
 
-    @utils.ModelNeededDecorators.PARAMETER_NEEDED("rescaled")
+    @utils.ModelNeededDecorators.PARAMETER_NEEDED("rescaled_feature_activations")
     def save_interpretation_samples(self, path):
         """
         Saves the Interpretation-Samples (Feature Activations over a text corpus) to disk.
@@ -259,7 +259,7 @@ class AutoInterpreter:
             }
 
         # Autoencoder-Information except state-dict
-        for key in self.autoencoder_config.values():
+        for key in self.autoencoder_config.keys():
             if key == "STATE_DICT":
                 continue
             interpretation_samples["SAE_INFO"][key] = self.autoencoder_config[key]
@@ -283,7 +283,7 @@ class AutoInterpreter:
         self.mean_feature_activations = obj["mean_feature_activations"]
         self.interpretable_neuron_indices = obj["interpretable_neuron_indices"]
 
-    @utils.ModelNeededDecorators.PARAMETER_NEEDED("rescaled")
+    @utils.ModelNeededDecorators.PARAMETER_NEEDED("rescaled_feature_activations")
     def get_fragment(self, interp_neuron_index, rank, return_activations=False):
         """
         Returns one Text Fragment on which the given interp_neuron_index activates strongly.
@@ -462,7 +462,7 @@ class AutoInterpreter:
             return kv_dict_rescaled, raw_simulation
         return kv_dict_rescaled
 
-    @utils.ModelNeededDecorators.PARAMETER_NEEDED("rescaled")
+    @utils.ModelNeededDecorators.PARAMETER_NEEDED("rescaled_feature_activations")
     def generate_ground_truth_scores(self, interp_neuron_index, rank):
         """
         Generates the Ground Truth Activation-Sample for a given Text Sample ID.
