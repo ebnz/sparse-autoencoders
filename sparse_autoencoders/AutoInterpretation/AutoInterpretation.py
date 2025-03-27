@@ -153,7 +153,7 @@ class AutoInterpreter:
 
     @utils.ModelNeededDecorators.PARAMETER_NEEDED("target_model")
     @utils.ModelNeededDecorators.PARAMETER_NEEDED("ds")
-    def obtain_interpretation_samples(self, num_batches, log_freq_lower=-4, log_freq_upper=-3):
+    def obtain_interpretation_samples(self, num_batches, log_freq_lower=-2, log_freq_upper=-0.1):
         """
         1. Run data through the Target-LLM to obtain Feature-Frequency Information.
         2. Run num_batches Batches of data through the Target-LLM to do AutoInterpretation on.

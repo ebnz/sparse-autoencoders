@@ -51,6 +51,20 @@ parser.add_argument(
     help="Device of Autoencoder"
 )
 
+parser.add_argument(
+    "--log_freq_upper",
+    default=-0.1,
+    type=float,
+    help="Maximal Log-Feature-Frequency at which a Feature should be interpreted"
+)
+
+parser.add_argument(
+    "--log_freq_lower",
+    default=-2,
+    type=float,
+    help="Minimal Log-Feature-Frequency at which a Feature should be interpreted"
+)
+
 """
 Parse Arguments
 """
@@ -66,6 +80,19 @@ TARGET_MODEL_NAME = args.target_model_name
 
 TARGET_MODEL_DEVICE = args.target_model_device
 AUTOENCODER_DEVICE = args.autoencoder_device
+
+LOG_FREQ_UPPER = args.log_freq_upper
+LOG_FREQ_LOWER = args.log_freq_lower
+
+"""
+Checks
+"""
+if LOG_FREQ_UPPER <= LOG_FREQ_LOWER:
+    raise argparse.ArgumentError("log_freq_upper <= log_freq_lower. "
+                                 "Please make sure that log_freq_upper > log_freq_lower")
+
+if LOG_FREQ_UPPER >= 0 or LOG_FREQ_LOWER >= 0:
+    raise argparse.ArgumentError("log_freq_upper and log_freq_lower must be negative!")
 
 """
 Obtain Interpretation Samples
@@ -84,5 +111,5 @@ interpreter.load_dataset()
 interpreter.load_target_model(TARGET_MODEL_DEVICE)
 interpreter.load_autoencoder(AUTOENCODER_DEVICE)
 
-interpreter.obtain_interpretation_samples(NUM_SAMPLES)
+interpreter.obtain_interpretation_samples(NUM_SAMPLES, log_freq_upper=LOG_FREQ_UPPER, log_freq_lower=LOG_FREQ_LOWER)
 interpreter.save_interpretation_samples(SAVE_PATH)
