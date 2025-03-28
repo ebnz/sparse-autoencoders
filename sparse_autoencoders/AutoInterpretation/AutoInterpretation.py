@@ -330,7 +330,11 @@ class AutoInterpreter:
                 return_activations=False
             )
 
-            text = self.interpretation_model.tokenizer.batch_decode([fragment])[0]
+            try:
+                text = self.interpretation_model.tokenizer.batch_decode([fragment])[0]
+            except Exception:
+                # IndexError -> due to passing
+                continue
             complete_texts.append(text)
 
         # Obtain Tokens and Activations of Fragments
@@ -341,8 +345,11 @@ class AutoInterpreter:
                 i,
                 return_activations=True
             )
-
-            tokens += self.interpretation_model.tokenizer.convert_ids_to_tokens(fragment[:self.NUM_TOKENS])
+            try:
+                tokens += self.interpretation_model.tokenizer.convert_ids_to_tokens(fragment[:self.NUM_TOKENS])
+            except Exception:
+                # IndexError -> due to passing
+                continue
             activations += rescaled_per_token_feature_acts[:self.NUM_TOKENS]
 
         # Generate User-Prompt using PromptGenerator of InterpretationConfig
@@ -383,7 +390,11 @@ class AutoInterpreter:
         """
 
         fragment = self.get_fragment(interp_neuron_index, rank)
-        tokens = self.interpretation_model.tokenizer.convert_ids_to_tokens(fragment[:self.NUM_TOKENS])
+        try:
+            tokens = self.interpretation_model.tokenizer.convert_ids_to_tokens(fragment[:self.NUM_TOKENS])
+        except Exception:
+            # IndexError -> due to passing
+            tokens = []
 
         user_prompt = self.interpretation_config.prompt_generator.get_simulation_prompt(tokens, explanation)
 
@@ -480,7 +491,11 @@ class AutoInterpreter:
         kv_dict = {}
 
         for i in range(len(fragment)):
-            key = f"{self.interpretation_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]}"
+            try:
+                key = f"{self.interpretation_model.tokenizer.convert_ids_to_tokens([fragment[i]])[0]}"
+            except Exception:
+                # IndexError -> due to passing
+                continue
             value = int(rescaled_per_token_feature_acts[i])
 
             # Replace unwanted Characters in the Token

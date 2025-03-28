@@ -36,6 +36,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--autoencoder_path",
+    default="./autoencoder.pt",
+    type=str,
+    help="Path to Autoencoder to interpret"
+)
+
+parser.add_argument(
     "--num_interpretation_samples",
     default=3,
     type=int,
@@ -87,6 +94,8 @@ INTERPRETATION_MODEL_NAME = args.interpretation_model_name
 
 NUM_GPUS = args.num_gpus
 
+AUTOENCODER_PATH = args.autoencoder_path
+
 NUM_INTERPRETATION_SAMPLES = args.num_interpretation_samples
 NUM_SIMULATION_SAMPLES = args.num_simulation_samples
 
@@ -113,11 +122,13 @@ interpreter.load_dataset()
 interpreter.load_interpretation_model_deepspeed(NUM_GPUS)
 interpreter.load_interpretation_samples(INTERPRETATION_SAMPLES_PATH)
 
+with open(AUTOENCODER_PATH, "rb") as f:
+    sae_config = pickle.load(f)
+
 # ElasticSearch Index-Name
-INDEX_NAME = (f'{interpreter.autoencoder_config["MODEL_TYPE"]}_{interpreter.autoencoder_config["LAYER_TYPE"]}_'
-              f'{interpreter.autoencoder_config["LAYER_INDEX"]}_{interpreter.autoencoder_config["ACT_VEC_SIZE"]}_'
-              f'{interpreter.autoencoder_config["DICT_VEC_SIZE"]}_{interpreter.autoencoder_config["LEARNING_RATE"]}_'
-              f'{interpreter.autoencoder_config["L1_COEFFICIENT"]}').lower()
+INDEX_NAME = (f'{sae_config["MODEL_TYPE"]}_{sae_config["LAYER_TYPE"]}_{sae_config["LAYER_INDEX"]}_'
+              f'{sae_config["ACT_VEC_SIZE"]}_{sae_config["DICT_VEC_SIZE"]}_{sae_config["LEARNING_RATE"]}_'
+              f'{sae_config["L1_COEFFICIENT"]}').lower()
 
 if LOCAL_RANK == 0:
     # Open ElasticSearch-Connection
@@ -135,14 +146,20 @@ for idx, item in enumerate(interpreter.interpretable_neuron_indices):
     feature_index = item.item()
 
     # Interpretation
-    user_prompt_interpretation = interpreter.generate_interpretation_prompt(interp_neuron_index, NUM_INTERPRETATION_SAMPLES)
+    user_prompt_interpretation = interpreter.generate_interpretation_prompt(interp_neuron_index,
+                                                                            NUM_INTERPRETATION_SAMPLES)
     interpretation = interpreter.get_explanation(user_prompt_interpretation)
 
     # Simulation
-    user_prompt_simulation = interpreter.generate_simulation_prompt(interp_neuron_index, NUM_SIMULATION_SAMPLES, interpretation)
+    scores_gt, scores_simulated = {}, {}
+    for i in range(NUM_SIMULATION_SAMPLES):
+        user_prompt_simulation = interpreter.generate_simulation_prompt(interp_neuron_index,
+                                                                        NUM_INTERPRETATION_SAMPLES + i, interpretation)
 
-    scores_simulated = interpreter.get_simulation(user_prompt_simulation)
-    scores_gt = interpreter.generate_ground_truth_scores(interp_neuron_index, NUM_SIMULATION_SAMPLES)
+        # Merge dicts
+        scores_simulated = scores_simulated | interpreter.get_simulation(user_prompt_simulation)
+        scores_gt = scores_gt | interpreter.generate_ground_truth_scores(interp_neuron_index,
+                                                                         NUM_INTERPRETATION_SAMPLES + i)
 
     correlation_score = calculate_correlation_from_kv_dict(scores_gt, scores_simulated)
 
@@ -154,8 +171,8 @@ for idx, item in enumerate(interpreter.interpretable_neuron_indices):
 
     if LOCAL_RANK == 0:
         document = {
-            "layer": interpreter.autoencoder_config["LAYER_INDEX"],
-            "dim": idx,
+            "layer": sae_config["LAYER_INDEX"],
+            "dim": item.item(),
             "tokens": tokens,
             "score": correlation_score,
             "interpretation": interpretation
