@@ -4,7 +4,7 @@ import os
 import random
 import torch
 from datasets import load_dataset
-from transformers import CodeLlamaTokenizer
+from transformers import CodeLlamaTokenizer, LlamaTokenizer
 
 """
 Classes
@@ -17,19 +17,12 @@ class HFDatasetIterator:
         """
         self.dataset_name = dataset_name
 
-        self.LANGS = ["assembly", "batchfile", "cpp", "c", "c-sharp", "cmake", "css", "dockerfile", "fortran", "go",
-                      "haskell", "html", "java", "javascript", "julia", "lua", "makefile", "markdown", "perl", "php",
-                      "powershell", "python", "ruby", "rust", "scala", "shell", "sql", "tex", "typescript",
-                      "visual-basic"]
-
-        """self.LANGS = ["assembly", "batchfile", "c++", "c", "c-sharp", "cmake", "css", "dockerfile", "fortran", "go",
-                 "haskell", "html", "java", "javascript", "julia", "lua", "makefile", "markdown", "perl", "php",
-                 "powershell", "python", "ruby", "rust", "scala", "shell", "sql", "tex", "typescript", "visual-basic"]"""
+        self.langs = ['stories', 'web_samples_v1', 'web_samples_v2']
 
         print(">>> Loading Dataset Handles from HuggingFace. This may take a while, depending on number of "
               "Programming Languages specified!")
         self.datasets = [
-            load_dataset(self.dataset_name, data_dir=f"data/{lang}", streaming=True, split="train") for lang in self.LANGS
+            load_dataset(self.dataset_name, lang, streaming=True, split="train") for lang in self.langs
         ]
         self.iters = [iter(item) for item in self.datasets]
 
@@ -77,14 +70,14 @@ parser.add_argument(
 
 parser.add_argument(
     "--tokenizer_name",
-    default="codellama/CodeLlama-7b-Instruct-hf",
+    default="meta-llama/Llama-2-7b-chat-hf",
     type=str,
     help="HuggingFace-Name for the Tokenizer for tokenizing the Contexts. Currently only works for CodeLlama-Tokenizers"
 )
 
 parser.add_argument(
     "--dataset_name",
-    default="bigcode/the-stack-dedup",
+    default="HuggingFaceTB/cosmopedia",
     type=str,
     help="HuggingFace-Name for Dataset to load data from"
 )
@@ -116,7 +109,7 @@ if not os.path.isdir(PATH):
     os.mkdir(PATH)
 
 # Technically also checks, since Errors are raised when strings/names are invalid
-tokenizer = CodeLlamaTokenizer.from_pretrained(tokenizer_name)
+tokenizer = LlamaTokenizer.from_pretrained(tokenizer_name)
 d = HFDatasetIterator(dataset_name)
 
 
@@ -132,12 +125,12 @@ def task(id, num_files_per_process):
         while len(tokenized) < NUM_SAMPLES_PER_FILE:
             # Load a single Context from HuggingFace Dataset
             item = next(d)
-            tokens = tokenizer(item["content"], return_tensors="pt", truncation=True, max_length=MIN_TOKENS, add_special_tokens=False)
+            tokens = tokenizer(item["text"], return_tensors="pt", truncation=True, max_length=MIN_TOKENS, add_special_tokens=False)
 
             # If loaded Context from HuggingFace Dataset is too short, reload a new one
             while len(tokens["input_ids"][0]) < MIN_TOKENS:
                 item = next(d)
-                tokens = tokenizer(item["content"], return_tensors="pt", truncation=True, max_length=MIN_TOKENS, add_special_tokens=False)
+                tokens = tokenizer(item["text"], return_tensors="pt", truncation=True, max_length=MIN_TOKENS, add_special_tokens=False)
 
             # Append tokenized Context to list
             tokenized.append(tokens["input_ids"])

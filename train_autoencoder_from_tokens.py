@@ -47,7 +47,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--model_name",
-    default="codellama/CodeLlama-7b-Instruct-hf",
+    default="meta-llama/Llama-2-7b-chat-hf",
     type=str,
     help="HuggingFace-Name for the Model for obtaining Activations. Currently only works for CodeLlama-Models"
 )
