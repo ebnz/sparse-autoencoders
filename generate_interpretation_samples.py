@@ -32,7 +32,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--target_model_name",
-    default="codellama/CodeLlama-7b-Instruct-hf",
+    default="meta-llama/Llama-2-7b-chat-hf",
     type=str,
     help="Name of Target-Model. Currently, only CodeLlama-Models are supported"
 )

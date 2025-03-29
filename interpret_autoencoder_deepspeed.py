@@ -23,7 +23,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--interpretation_model_name",
-    default="codellama/CodeLlama-34b-Instruct-hf",
+    default="meta-llama/Llama-2-13b-chat-hf",
     type=str,
     help="Name of Interpretation-Model. Currently, only CodeLlama-Models are supported"
 )
@@ -126,7 +126,7 @@ with open(AUTOENCODER_PATH, "rb") as f:
     sae_config = pickle.load(f)
 
 # ElasticSearch Index-Name
-INDEX_NAME = (f'{sae_config["MODEL_TYPE"]}_{sae_config["LAYER_TYPE"]}_{sae_config["LAYER_INDEX"]}_'
+INDEX_NAME = (f'llama_{sae_config["MODEL_TYPE"]}_{sae_config["LAYER_TYPE"]}_{sae_config["LAYER_INDEX"]}_'
               f'{sae_config["ACT_VEC_SIZE"]}_{sae_config["DICT_VEC_SIZE"]}_{sae_config["LEARNING_RATE"]}_'
               f'{sae_config["L1_COEFFICIENT"]}').lower()
 
