@@ -1,6 +1,6 @@
 import unittest
 
-from ..utils.helper_functions import *
+from sparse_autoencoders.utils.helper_functions import *
 
 class HelperTests(unittest.TestCase):
     """

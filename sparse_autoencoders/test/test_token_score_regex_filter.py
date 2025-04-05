@@ -1,6 +1,6 @@
 import unittest
 
-from ..AutoInterpretation.TokenScoreRegexFilter import *
+from sparse_autoencoders.AutoInterpretation.TokenScoreRegexFilter import *
 
 class TokenScoreRegexFilterTest(unittest.TestCase):
     true_line = '* "Fix": 10'

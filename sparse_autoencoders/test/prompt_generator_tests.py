@@ -1,6 +1,6 @@
 import unittest
 
-from ..AutoInterpretation.PromptGenerator import *
+from sparse_autoencoders.AutoInterpretation.PromptGenerator import *
 
 class MyPromptGenerator(CodeLlamaPromptGenerator):
     def __init__(self):
