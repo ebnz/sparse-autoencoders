@@ -18,7 +18,7 @@ jobs:
         echo $CONDA/bin >> $GITHUB_PATH
     - name: Install dependencies
       run: |
-        conda env update --file ../conda.yml --name base
+        conda env update --file conda.yml --name base
     - name: Install Conda-Develop
       run: |
         conda install conda-build
@@ -27,4 +27,4 @@ jobs:
         conda develop .
     - name: Test with pytest
       run: |
-        python3 -m unittest discover test/
+        python3 -m unittest discover sparse_autoencoders/test/
