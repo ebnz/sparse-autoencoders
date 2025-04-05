@@ -61,6 +61,7 @@ def generate_loss_curve(reconstruction_losses, sparsity_losses):
     fig.update_layout(yaxis_type="log")
     return fig
 
+
 def generate_histogram(activation_counts_log10, no_dead_neurons):
     """
     Returns a Plotly Figure, containing a Histogram of the Feature Frequencies.
@@ -77,6 +78,7 @@ def generate_histogram(activation_counts_log10, no_dead_neurons):
     )
     return fig
 
+
 def save_plotly_graph(fig, save_path):
     """
     Saves a Plotly Figure to disk.
@@ -87,9 +89,12 @@ def save_plotly_graph(fig, save_path):
     """
     plotly.offline.plot(fig, filename=save_path)
 
+
 """
 CHECKPOINTING
 """
+
+
 def save_autoencoder_checkpoint(model_conf, save_path):
     """
     Saves a Checkpoint of an Autoencoder, generated during Training.

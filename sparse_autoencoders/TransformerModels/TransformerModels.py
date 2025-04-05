@@ -89,7 +89,8 @@ class TransformerModelWrapper:
         # Return decoded tokens
         return self.tokenizer.decode(output[0])
 
-    def generate_instructive(self, system_prompt, user_prompt, top_p=0.9, temperature=0.1, max_new_tokens=500, add_special_tokens=True):
+    def generate_instructive(self, system_prompt, user_prompt, top_p=0.9, temperature=0.1, max_new_tokens=500,
+                             add_special_tokens=True):
         """
         Generates an answer to a specific prompt with a chosen LLM-Model and Tokenizer.
         :type system_prompt: str

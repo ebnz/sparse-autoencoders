@@ -22,9 +22,6 @@ jobs:
     - name: Install Conda-Develop
       run: |
         conda install conda-build
-    - name: Install Pytorch-CPU
-      run: |
-        conda install pytorch-cpu
     - name: Install Package
       run: |
         conda develop .

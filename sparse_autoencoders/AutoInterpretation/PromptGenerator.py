@@ -171,7 +171,7 @@ class CodeLlamaPromptGenerator(PromptGeneratorBase):
             tokens = tokens.tolist()
 
         # Example for the LLM
-        user_prompt = f'''
+        user_prompt = '''
 Neuron 1: 
 Explanation of neuron 1 behavior: the main thing this neuron does is find phrases related to community. 
 Activations: 

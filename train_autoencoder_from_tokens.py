@@ -248,6 +248,7 @@ print(f"using {NUM_TOKENS} tokens")
 # Load Target Model
 target_model = CodeLlamaModel(TARGET_MODEL_NAME, device=DEVICE_LLM)
 
+
 """
 Custom Hook-Methods for Obtaining/Saving Activations
 """
@@ -257,17 +258,20 @@ def hook_mlp(module, input, output):
     # Append each MLP-/Attention-Activations to raw_activation_vecs
     raw_activation_vecs.append(output.detach().cpu())
 
+
 def hook_attn(module, input, output):
     global raw_activation_vecs
 
     # Append each MLP-/Attention-Activations to raw_activation_vecs
     raw_activation_vecs.append(output[0].detach().cpu())
 
+
 def hook_mlp_acts(module, input, output):
     global raw_activation_vecs
 
     # Append each MLP-/Attention-Activations to raw_activation_vecs
     raw_activation_vecs.append(output.detach().cpu())
+
 
 if LAYER_TYPE == "mlp_sublayer":
     target_model.setup_hook(hook_mlp, MLP_SUBLAYER_HOOKPOINT.format(LAYER_INDEX))
@@ -303,13 +307,13 @@ training_finished = False
 """
 A 'short' Comment on num_batches_to_train = int((BATCH_SIZE_LLM / BATCH_SIZE_AE) * NUM_TOKENS * len(interpreter.dl))
 
-len(interpreter.dl) gives amount of Batches with size of BATCH_SIZE_LLM; 
+len(interpreter.dl) gives amount of Batches with size of BATCH_SIZE_LLM;
 
-Multiplication with NUM_TOKENS: 
-From each Text-/Code-Sample, we take one Activation Vector for each Token. 
-Since there are 64 (by default) Tokens per Sample, we take 64 Activation Vectors per Sample; 
+Multiplication with NUM_TOKENS:
+From each Text-/Code-Sample, we take one Activation Vector for each Token.
+Since there are 64 (by default) Tokens per Sample, we take 64 Activation Vectors per Sample;
 
-Multiplication with (BATCH_SIZE_LLM / BATCH_SIZE_AE): 
+Multiplication with (BATCH_SIZE_LLM / BATCH_SIZE_AE):
 Calculate Amount of Batches with size of BATCH_SIZE_AE from Amount of Batches with size of BATCH_SIZE_LLM
 """
 if NUM_BATCHES != 0:
@@ -332,7 +336,6 @@ for input_ids in dataloader:
         continue
 
     buffer_pbar.reset()
-
 
     # Prepare Batches, if enough Activation Vectors Sampled
     unbatched = torch.vstack(raw_activation_vecs)
@@ -369,11 +372,10 @@ for input_ids in dataloader:
 
         training_pbar.update(1)
 
-        #Early-Stopping after Amount of Batches (in BATCH_SIZE_AE)
+        # Early-Stopping after Amount of Batches (in BATCH_SIZE_AE)
         if trained_batches > NUM_BATCHES and NUM_BATCHES != 0:
             training_finished = True
             break
 
     if training_finished:
         break
-

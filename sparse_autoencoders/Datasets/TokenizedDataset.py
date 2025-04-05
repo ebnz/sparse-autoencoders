@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset
 import os
 
+
 class TokenizedDataset(Dataset):
     def __init__(self, path, dtype=torch.float32):
         """
@@ -40,14 +41,15 @@ class TokenizedDataset(Dataset):
 
     def __getitem__(self, index):
         """
-        Get an Item from the Dataset by Index. 
+        Get an Item from the Dataset by Index.
         :type index: int
         :rtype: torch.Tensor
         :param index: Index of the Item to return
         :return: Dataset Item
         """
         if index >= self.NUM_FILES * self.NUM_SAMPLES_PER_FILE:
-            raise Exception(f"End of Dataset reached. Requested item {index} but length of Dataset is {self.NUM_FILES * self.NUM_SAMPLES_PER_FILE}")
+            raise Exception(f"End of Dataset reached. Requested item {index} but length of Dataset is "
+                            f"{self.NUM_FILES * self.NUM_SAMPLES_PER_FILE}")
 
         new_file_id = index // self.NUM_SAMPLES_PER_FILE
         sub_index = index % self.NUM_SAMPLES_PER_FILE
@@ -88,7 +90,8 @@ class TokenizedDatasetPreload(TokenizedDataset):
 
     def __getitem__(self, index):
         if index >= self.NUM_FILES * self.NUM_SAMPLES_PER_FILE:
-            raise Exception(f"End of Dataset reached. Requested item {index} but length of Dataset is {self.NUM_FILES * self.NUM_SAMPLES_PER_FILE}")
+            raise Exception(f"End of Dataset reached. Requested item {index} but length of Dataset is "
+                            f"{self.NUM_FILES * self.NUM_SAMPLES_PER_FILE}")
 
         new_file_id = index // self.NUM_SAMPLES_PER_FILE
         sub_index = index % self.NUM_SAMPLES_PER_FILE

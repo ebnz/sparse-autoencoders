@@ -113,7 +113,6 @@ class AutoEncoderBase(torch.nn.Module):
         """
         raise NotImplementedError("AutoEncoderBase is an interface!")
 
-
     """
     Neuron Resampling Methods
     """
@@ -161,11 +160,11 @@ class AutoEncoderBase(torch.nn.Module):
             # Reset self.summed_f_resampling
             self.summed_f_resampling = torch.zeros(self.m)
 
-
     """
     Checkpointing Methods
     """
-    def enable_checkpointing(self, learning_rate, l1_coefficient, batch_size, layer_type, layer_index, save_path, image_path, checkpoint_interval=12_500):
+    def enable_checkpointing(self, learning_rate, l1_coefficient, batch_size, layer_type, layer_index, save_path,
+                             image_path, checkpoint_interval=12_500):
         """
         Enables Checkpointing of the Model's Training Process.
         :type learning_rate: float
@@ -265,6 +264,7 @@ class AutoEncoderBase(torch.nn.Module):
                 os.path.join(self.SAVE_PATH, f"{self.training_runs}.pt")
             )
 
+
 class AutoEncoderAnthropic(AutoEncoderBase):
     def __init__(self, n, m):
         """
@@ -289,7 +289,6 @@ class AutoEncoderAnthropic(AutoEncoderBase):
     @torch.no_grad()
     def decoder_unit_norm(self):
         self.weight_decoder.data = (self.weight_decoder.T / torch.norm(self.weight_decoder, dim=1, p=2)).T
-
 
     """
     Forward Methods

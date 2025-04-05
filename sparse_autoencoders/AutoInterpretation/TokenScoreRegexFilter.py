@@ -1,5 +1,6 @@
 import re
 
+
 class TokenScoreRegexFilter:
     def __init__(self, search_regex, token_regex, score_regex):
         """
@@ -163,4 +164,3 @@ class RegexException(Exception):
         Regex could not be matched to a line.
         """
         super().__init__(*args)
-

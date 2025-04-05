@@ -2,6 +2,7 @@ import unittest
 
 from sparse_autoencoders.AutoInterpretation.PromptGenerator import *
 
+
 class MyPromptGenerator(CodeLlamaPromptGenerator):
     def __init__(self):
         super().__init__()
@@ -19,6 +20,7 @@ class MyPromptGenerator(CodeLlamaPromptGenerator):
             "[INST]": ""
         }
 
+
 class PromptGeneratorTest(unittest.TestCase):
     prompt_generator = MyPromptGenerator()
 
@@ -27,7 +29,9 @@ class PromptGeneratorTest(unittest.TestCase):
     activations = [6, 9, 0]
 
     def test_get_int_prompt_normal(self):
-        int_prompt = "Neuron: \nThe complete documents: \n\ntext_1\n\ntext_2\n\nActivations: \n<start>\n* a \x09 6 \n* b \x09 9 \n* c \x09 0 \n<end>\nSame activations, but with all zeros filtered out: \n<start>\n* a \x09 6 \n* b \x09 9 \n<end>\n\n \n"
+        int_prompt = ("Neuron: \nThe complete documents: \n\ntext_1\n\ntext_2\n\nActivations: \n"
+                      "<start>\n* a \x09 6 \n* b \x09 9 \n* c \x09 0 \n<end>\nSame activations, "
+                      "but with all zeros filtered out: \n<start>\n* a \x09 6 \n* b \x09 9 \n<end>\n\n \n")
 
         self.assertEqual(
             int_prompt,
@@ -41,7 +45,8 @@ class PromptGeneratorTest(unittest.TestCase):
         )
 
     def test_get_int_prompt_no_inputs(self):
-        int_prompt = "Neuron: \nThe complete documents: \n\nActivations: \n<start>\n<end>\nSame activations, but with all zeros filtered out: \n<start>\n<end>\n\n \n"
+        int_prompt = ("Neuron: \nThe complete documents: \n\nActivations: \n<start>\n<end>\n"
+                      "Same activations, but with all zeros filtered out: \n<start>\n<end>\n\n \n")
 
         self.assertEqual(
             int_prompt,
@@ -55,7 +60,8 @@ class PromptGeneratorTest(unittest.TestCase):
         )
 
     def test_get_int_prompt_no_filtered_tokens(self):
-        int_prompt = "Neuron: \nThe complete documents: \n\ntext_1\n\ntext_2\n\nActivations: \n<start>\n* a \x09 6 \n* b \x09 9 \n* c \x09 0 \n<end>\n\n \n"
+        int_prompt = ("Neuron: \nThe complete documents: \n\ntext_1\n\ntext_2\n\nActivations: \n"
+                      "<start>\n* a \x09 6 \n* b \x09 9 \n* c \x09 0 \n<end>\n\n \n")
 
         self.assertEqual(
             int_prompt,
@@ -69,7 +75,8 @@ class PromptGeneratorTest(unittest.TestCase):
         )
 
     def test_get_int_prompt_no_comp_texts(self):
-        int_prompt = "Neuron: \nActivations: \n<start>\n* a \x09 6 \n* b \x09 9 \n* c \x09 0 \n<end>\nSame activations, but with all zeros filtered out: \n<start>\n* a \x09 6 \n* b \x09 9 \n<end>\n\n \n"
+        int_prompt = ("Neuron: \nActivations: \n<start>\n* a \x09 6 \n* b \x09 9 \n* c \x09 0 \n<end>\nSame "
+                      "activations, but with all zeros filtered out: \n<start>\n* a \x09 6 \n* b \x09 9 \n<end>\n\n \n")
 
         self.assertEqual(
             int_prompt,
@@ -130,6 +137,7 @@ Activations:
                 "[INST]INSTRUCTION[/INST]blablabla_answer[INST]"
             )
         )
+
 
 if __name__ == '__main__':
     unittest.main()

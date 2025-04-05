@@ -209,7 +209,7 @@ dependencies:
   - libsystemd0=257.4=h4e0b6ca_1
   - libthrift=0.21.0=h0e7cc3e_0
   - libtiff=4.7.0=hd9ff511_3
-  - libtorch=2.5.1=cuda126_mkl_h9fa54b4_316
+  - libtorch=2.5.1=cpu_mkl_hec71012_116
   - libudev1=257.4=hbe16f8c_1
   - libutf8proc=2.10.0=h4c51ac1_0
   - libuuid=2.38.1=h0b41bf4_0
@@ -246,7 +246,7 @@ dependencies:
   - ncurses=6.5=h2d0b736_3
   - networkx=3.4.2=pyh267e887_2
   - nlohmann_json=3.11.3=he02047a_1
-  - numpy=2.2.0=py310h5851e9f_0
+  - numpy=2.2.4=py310hefbff90_0
   - nvidia-ml-py=12.570.86=pyhd8ed1ab_0
   - openjpeg=2.5.3=h5fbd93e_0
   - openldap=2.6.9=he970967_0
@@ -293,6 +293,8 @@ dependencies:
   - python-tzdata=2025.2=pyhd8ed1ab_0
   - python-xxhash=3.5.0=py310ha75aee5_2
   - python_abi=3.10=6_cp310
+  - pytorch=2.5.1=cpu_mkl_py310_h9085503_116
+  - pytorch-cpu=2.5.1=cpu_mkl_hc60beec_116
   - pytz=2024.1=pyhd8ed1ab_0
   - pyyaml=6.0.2=py310h89163eb_2
   - qhull=2020.2=h434a139_5

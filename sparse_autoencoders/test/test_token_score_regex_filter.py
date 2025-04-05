@@ -2,6 +2,7 @@ import unittest
 
 from sparse_autoencoders.AutoInterpretation.TokenScoreRegexFilter import *
 
+
 class TokenScoreRegexFilterTest(unittest.TestCase):
     true_line = '* "Fix": 10'
     false_line = '- <Fix>: abc'

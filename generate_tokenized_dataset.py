@@ -6,6 +6,7 @@ import torch
 from datasets import load_dataset
 from transformers import CodeLlamaTokenizer
 
+
 """
 Classes
 """
@@ -132,12 +133,14 @@ def task(id, num_files_per_process):
         while len(tokenized) < NUM_SAMPLES_PER_FILE:
             # Load a single Context from HuggingFace Dataset
             item = next(d)
-            tokens = tokenizer(item["content"], return_tensors="pt", truncation=True, max_length=MIN_TOKENS, add_special_tokens=False)
+            tokens = tokenizer(item["content"], return_tensors="pt", truncation=True,
+                               max_length=MIN_TOKENS, add_special_tokens=False)
 
             # If loaded Context from HuggingFace Dataset is too short, reload a new one
             while len(tokens["input_ids"][0]) < MIN_TOKENS:
                 item = next(d)
-                tokens = tokenizer(item["content"], return_tensors="pt", truncation=True, max_length=MIN_TOKENS, add_special_tokens=False)
+                tokens = tokenizer(item["content"], return_tensors="pt", truncation=True,
+                                   max_length=MIN_TOKENS, add_special_tokens=False)
 
             # Append tokenized Context to list
             tokenized.append(tokens["input_ids"])
@@ -150,6 +153,7 @@ def task(id, num_files_per_process):
         tensor = torch.cat(tokenized)
         torch.save(tensor, os.path.join(PATH, f"fragment_{id}_{i_file}.pt"))
         tokenized = []
+
 
 """
 Start Processes with task

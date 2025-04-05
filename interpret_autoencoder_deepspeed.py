@@ -1,5 +1,6 @@
 import argparse
 from tqdm import tqdm
+import pickle
 from elasticsearch import Elasticsearch
 
 from sparse_autoencoders.AutoInterpretation import *

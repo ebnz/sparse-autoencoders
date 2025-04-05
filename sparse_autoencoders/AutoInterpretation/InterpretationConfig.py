@@ -165,4 +165,3 @@ class CodeLlamaInterpretationConfig(InterpretationConfigBase):
         TokenScoreRegexFilter('.+[ \t]+[0-9]?[0-9]?', '\A.+ ', '[0-9]+\Z')
         .set_token_cropping(0, 1)
     ]
-
