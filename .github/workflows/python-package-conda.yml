@@ -18,10 +18,13 @@ jobs:
         echo $CONDA/bin >> $GITHUB_PATH
     - name: Install dependencies
       run: |
-        conda env update --file conda.yml --name base
+        conda env update --file conda_cpu.yml --name base
     - name: Install Conda-Develop
       run: |
         conda install conda-build
+    - name: Install Pytorch-CPU
+      run: |
+        conda install pytorch
     - name: Install Package
       run: |
         conda develop .
