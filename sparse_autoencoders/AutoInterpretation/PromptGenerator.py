@@ -134,29 +134,33 @@ class CodeLlamaPromptGenerator(PromptGeneratorBase):
 
         # List all complete Text-Fragments
         user_prompt = "Neuron: \n"
-        user_prompt += "The complete documents: \n\n"
+        if include_complete_texts:
+            user_prompt += "The complete documents: \n\n"
 
-        for text in complete_texts:
-            user_prompt += f"{text}\n\n"
+            for text in complete_texts:
+                user_prompt += f"{text}\n\n"
 
         # List all Tokens with Activations
         user_prompt += "Activations: \n"
         user_prompt += "<start>\n"
 
         for token, activation in zip(tokens, activations):
-            user_prompt += f"* {token} \x09 {activation} \n"
+            refined_token = apply_dict_replacement(token, self.token_replacements)
+            user_prompt += f"* {refined_token} \x09 {activation} \n"
 
         user_prompt += "<end>\n"
 
         # List all Tokens with zeros filtered out
-        user_prompt += "Same activations, but with all zeros filtered out: \n"
-        user_prompt += "<start>\n"
+        if include_filtered_tokens:
+            user_prompt += "Same activations, but with all zeros filtered out: \n"
+            user_prompt += "<start>\n"
 
-        for token, activation in zip(tokens, activations):
-            if activation > 0:
-                user_prompt += f"* {token} \x09 {activation} \n"
+            for token, activation in zip(tokens, activations):
+                if activation > 0:
+                    refined_token = apply_dict_replacement(token, self.token_replacements)
+                    user_prompt += f"* {refined_token} \x09 {activation} \n"
 
-        user_prompt += "<end>\n"
+            user_prompt += "<end>\n"
         user_prompt += "\n \n"
 
         return user_prompt
