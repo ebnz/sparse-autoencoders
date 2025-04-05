@@ -1,6 +1,6 @@
 import unittest
 
-from sparse_autoencoders.AutoInterpretation.TokenScoreRegexFilter import *
+from sparse_autoencoders.AutoInterpretation.TokenScoreRegexFilter import TokenScoreRegexFilter, RegexException
 
 
 class TokenScoreRegexFilterTest(unittest.TestCase):

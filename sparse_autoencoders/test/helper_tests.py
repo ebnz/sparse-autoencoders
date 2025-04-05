@@ -1,6 +1,8 @@
 import unittest
 
-from sparse_autoencoders.utils.helper_functions import *
+from sparse_autoencoders.utils.helper_functions import (calculate_correlation_from_kv_dict,
+                                                        apply_dict_replacement,
+                                                        remove_leading_asterisk)
 
 
 class HelperTests(unittest.TestCase):
@@ -51,13 +53,13 @@ class HelperTests(unittest.TestCase):
     }
 
     def test_apply_dict_replacement_empty_str(self):
-        self.assertEqual("", apply_dict_replacement("", repl_dict))
+        self.assertEqual("", apply_dict_replacement("", self.repl_dict))
 
     def test_apply_dict_replacement_empty_dict(self):
         self.assertEqual("example_str<>|", apply_dict_replacement("example_str<>|", {}))
 
     def test_apply_dict_replacement_normal(self):
-        self.assertEqual("examplestr ", apply_dict_replacement("example_str<>|", repl_dict))
+        self.assertEqual("examplestr ", apply_dict_replacement("example_str<>|", self.repl_dict))
 
     """
     remove_leading_asterisk
