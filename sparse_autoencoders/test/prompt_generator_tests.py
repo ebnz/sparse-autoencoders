@@ -120,7 +120,7 @@ Activations:
 * c \x09 <unknown> \n
 <end>\n\nInfer the unknown activations of Neuron 2 as a list of numerical values ranging from 0-10. One value per token.'''
 
-        self.assertEqual(my_sim_prompt, self.prompt_generator.get_simulation_prompt(tokens, "my_explanation"))
+        self.assertEqual(my_sim_prompt, self.prompt_generator.get_simulation_prompt(self.tokens, "my_explanation"))
 
     def test_special_tokens(self):
         self.assertEqual(
