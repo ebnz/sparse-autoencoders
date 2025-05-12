@@ -71,7 +71,7 @@ class TokenScoreRegexFilter:
         :rtype: str
         :type line: object
         :param line:
-        :return:
+        :return: Found Token
         """
         match_object = re.search(self.token_regex, line)
 
